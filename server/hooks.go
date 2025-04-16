@@ -80,132 +80,222 @@ func (h *Hooks) Add(hook Hook) {
 }
 
 func (h *Hooks) OnRegisterSession(ctx context.Context, session ClientSession) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnRegisterSession(ctx, session)
 	}
 }
 
 func (h *Hooks) OnBeforeAny(ctx context.Context, id any, method mcp.MCPMethod, message any) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeAny(ctx, id, method, message)
 	}
 }
 
 func (h *Hooks) OnSuccess(ctx context.Context, id any, method mcp.MCPMethod, message any, result any) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnSuccess(ctx, id, method, message, result)
 	}
 }
 
 func (h *Hooks) OnError(ctx context.Context, id any, method mcp.MCPMethod, message any, err error) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnError(ctx, id, method, message, err)
 	}
 }
 
 func (h *Hooks) OnBeforeInitialize(ctx context.Context, id any, message *mcp.InitializeRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeInitialize(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterInitialize(ctx context.Context, id any, message *mcp.InitializeRequest, result *mcp.InitializeResult) {
+	h.OnSuccess(ctx, id, mcp.MethodInitialize, message, result)
+
+	if h == nil {
+		return
+	}
 	for _, hook := range h.Hooks {
 		hook.OnAfterInitialize(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforePing(ctx context.Context, id any, message *mcp.PingRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforePing(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterPing(ctx context.Context, id any, message *mcp.PingRequest, result *mcp.EmptyResult) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnAfterPing(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforeListResources(ctx context.Context, id any, message *mcp.ListResourcesRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeListResources(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterListResources(ctx context.Context, id any, message *mcp.ListResourcesRequest, result *mcp.ListResourcesResult) {
+	h.OnSuccess(ctx, id, mcp.MethodResourcesList, message, result)
+
+	if h == nil {
+		return
+	}
 	for _, hook := range h.Hooks {
 		hook.OnAfterListResources(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforeListResourceTemplates(ctx context.Context, id any, message *mcp.ListResourceTemplatesRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeListResourceTemplates(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterListResourceTemplates(ctx context.Context, id any, message *mcp.ListResourceTemplatesRequest, result *mcp.ListResourceTemplatesResult) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnAfterListResourceTemplates(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforeReadResource(ctx context.Context, id any, message *mcp.ReadResourceRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeReadResource(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterReadResource(ctx context.Context, id any, message *mcp.ReadResourceRequest, result *mcp.ReadResourceResult) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnAfterReadResource(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforeListPrompts(ctx context.Context, id any, message *mcp.ListPromptsRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeListPrompts(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterListPrompts(ctx context.Context, id any, message *mcp.ListPromptsRequest, result *mcp.ListPromptsResult) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnAfterListPrompts(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforeGetPrompt(ctx context.Context, id any, message *mcp.GetPromptRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeGetPrompt(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterGetPrompt(ctx context.Context, id any, message *mcp.GetPromptRequest, result *mcp.GetPromptResult) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnAfterGetPrompt(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforeListTools(ctx context.Context, id any, message *mcp.ListToolsRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeListTools(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterListTools(ctx context.Context, id any, message *mcp.ListToolsRequest, result *mcp.ListToolsResult) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnAfterListTools(ctx, id, message, result)
 	}
 }
 
 func (h *Hooks) OnBeforeCallTool(ctx context.Context, id any, message *mcp.CallToolRequest) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnBeforeCallTool(ctx, id, message)
 	}
 }
 
 func (h *Hooks) OnAfterCallTool(ctx context.Context, id any, message *mcp.CallToolRequest, result *mcp.CallToolResult) {
+	if h == nil {
+		return
+	}
+
 	for _, hook := range h.Hooks {
 		hook.OnAfterCallTool(ctx, id, message, result)
 	}
