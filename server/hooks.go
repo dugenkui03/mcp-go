@@ -292,6 +292,8 @@ func (h *Hooks) OnBeforeCallTool(ctx context.Context, id any, message *mcp.CallT
 }
 
 func (h *Hooks) OnAfterCallTool(ctx context.Context, id any, message *mcp.CallToolRequest, result *mcp.CallToolResult) {
+	h.OnSuccess(ctx, id, mcp.MethodToolsCall, message, result)
+
 	if h == nil {
 		return
 	}
