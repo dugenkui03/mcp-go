@@ -19,10 +19,10 @@ type ChainedHookContext struct{
 func (*ChainedHookContext) IsHookContext()  { }
 
 type Hook interface {
-	// CreateHookContext
 	CreateHookContext() HookContext
+	GetHookContext() HookContext
 	//RegisterSession is a hook that will be called when a new session is registered.
-	RegisterSession(ctx context.Context, hookContext HookContext, session ClientSession)
+	RegisterSession(ctx context.Context, session ClientSession)
 	// OnBeforeAny is a function that is called after the request is
 	// parsed but before the method is called.
 	BeforeAny(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any)
@@ -54,6 +54,7 @@ type Hook interface {
 
 type ChainedHook struct {
 	Hooks []Hook
+	HookContext HookContext
 }
 
 func (h *ChainedHook) Add(hook Hook) {
@@ -70,16 +71,21 @@ func (h *ChainedHook) CreateHookContext() HookContext {
 	for _, hook := range h.Hooks {
 		chainedHookContext.HookContexts = append(chainedHookContext.HookContexts, hook.CreateHookContext())
 	}
+	h.HookContext = chainedHookContext
 	return chainedHookContext
 }
 
-func (h *ChainedHook) RegisterSession(ctx context.Context, hookContext HookContext, session ClientSession) {
+func (h *ChainedHook) GetHookContext() HookContext {
+	return h.HookContext
+}
+
+func (h *ChainedHook) RegisterSession(ctx context.Context, session ClientSession) {
 	if h == nil {
 		return
 	}
 
 	for _, hook := range h.Hooks {
-		hook.RegisterSession(ctx, hookContext, session)
+		hook.RegisterSession(ctx, session)
 	}
 }
 

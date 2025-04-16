@@ -695,95 +695,118 @@ func TestMCPServer_PromptHandling(t *testing.T) {
 	}
 }
 
-type ErrorHolderContext struct {
-	errs []error
+type beforeResult struct {
+	method  mcp.MCPMethod
+	message any
+}
+type afterResult struct {
+	method  mcp.MCPMethod
+	message any
+	result  any
 }
 
-func (ErrorHolderContext) IsHookContext() {}
-
-type exampleHook struct{}
-
-func (exampleHook) RegisterSession(ctx context.Context, hookContext HookContext, session ClientSession) {
+type exampleHookContext struct {
+	Errs          []error
+	BeforeResults []beforeResult
+	AfterResults  []afterResult
 }
 
-func (exampleHook) CreateHookContext() HookContext {
-	return nil
+func (*exampleHookContext) IsHookContext() {}
+
+func (e *exampleHookContext) AddError(err error) {
+	e.Errs = append(e.Errs, err)
 }
 
-func (exampleHook) BeforeAny(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any) {
-	fmt.Printf("beforeAny: %s, %v, %v\n", method, id, message)
+type exampleHook struct {
+	HookContext HookContext
 }
 
-func (exampleHook) OnSuccess(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, result any) {
-	fmt.Printf("onSuccess: %s, %v, %v, %v\n", method, id, message, result)
+func (*exampleHook) RegisterSession(ctx context.Context, session ClientSession) {
 }
 
-func (exampleHook) OnError(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, err error) {
-	fmt.Printf("onError: %s, %v, %v, %v\n", method, id, message, err)
+func (*exampleHook) CreateHookContext() HookContext {
+	hookContext := &exampleHookContext{}
+	hookContext.Errs = make([]error, 0)
+
+	return hookContext
 }
 
-func (exampleHook) BeforeInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest) {
+func (e *exampleHook) GetHookContext() HookContext {
+	return e.HookContext
+}
+
+func (*exampleHook) BeforeAny(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any) {
+	hookContext.(*exampleHookContext).BeforeResults = append(hookContext.(*exampleHookContext).BeforeResults, beforeResult{method, message})
+}
+
+func (*exampleHook) OnSuccess(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, result any) {
+	hookContext.(*exampleHookContext).AfterResults = append(hookContext.(*exampleHookContext).AfterResults, afterResult{method, message, result})
+}
+
+func (*exampleHook) OnError(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, err error) {
+	hookContext.(*exampleHookContext).AddError(err)
+}
+
+func (*exampleHook) BeforeInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest) {
 	fmt.Printf("beforeInitialize: %v, %v\n", id, message)
 }
 
-func (exampleHook) AfterInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest, result *mcp.InitializeResult) {
+func (*exampleHook) AfterInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest, result *mcp.InitializeResult) {
 	fmt.Printf("afterInitialize: %v, %v, %v\n", id, message, result)
 }
 
-func (exampleHook) BeforePing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest) {
+func (*exampleHook) BeforePing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest) {
 }
 
-func (exampleHook) AfterPing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest, result *mcp.EmptyResult) {
+func (*exampleHook) AfterPing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest, result *mcp.EmptyResult) {
 }
 
-func (exampleHook) BeforeListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest) {
+func (*exampleHook) BeforeListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest) {
 }
 
-func (exampleHook) AfterListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest, result *mcp.ListResourcesResult) {
+func (*exampleHook) AfterListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest, result *mcp.ListResourcesResult) {
 }
 
-func (exampleHook) BeforeListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest) {
+func (*exampleHook) BeforeListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest) {
 }
 
-func (exampleHook) AfterListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest, result *mcp.ListResourceTemplatesResult) {
+func (*exampleHook) AfterListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest, result *mcp.ListResourceTemplatesResult) {
 }
 
-func (exampleHook) BeforeReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest) {
+func (*exampleHook) BeforeReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest) {
 }
 
-func (exampleHook) AfterReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest, result *mcp.ReadResourceResult) {
+func (*exampleHook) AfterReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest, result *mcp.ReadResourceResult) {
 }
 
-func (exampleHook) BeforeListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest) {
+func (*exampleHook) BeforeListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest) {
 }
 
-func (exampleHook) AfterListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest, result *mcp.ListPromptsResult) {
+func (*exampleHook) AfterListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest, result *mcp.ListPromptsResult) {
 }
 
-func (exampleHook) BeforeGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest) {
+func (*exampleHook) BeforeGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest) {
 }
 
-func (exampleHook) AfterGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest, result *mcp.GetPromptResult) {
+func (*exampleHook) AfterGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest, result *mcp.GetPromptResult) {
 }
 
-func (exampleHook) BeforeListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest) {
+func (*exampleHook) BeforeListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest) {
 	fmt.Printf("beforeCallTool: %v, %v\n", id, message)
 }
 
-func (exampleHook) AfterListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest, result *mcp.ListToolsResult) {
+func (*exampleHook) AfterListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest, result *mcp.ListToolsResult) {
 	fmt.Printf("afterCallTool: %v, %v, %v\n", id, message, result)
 }
 
-func (exampleHook) BeforeCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest) {
+func (*exampleHook) BeforeCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest) {
 }
 
-func (exampleHook) AfterCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest, result *mcp.CallToolResult) {
+func (*exampleHook) AfterCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest, result *mcp.CallToolResult) {
 }
 
 func TestMCPServer_HandleInvalidMessages(t *testing.T) {
-	hooks := &ChainedHook{}
-	hooks.Add(&exampleHook{})
-
+	hooks := &exampleHook{}
 	server := NewMCPServer("test-server", "1.0.0", WithHooks(hooks))
 
 	tests := []struct {
@@ -823,7 +846,7 @@ func TestMCPServer_HandleInvalidMessages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errs = nil // Reset errors for each test case
+			//errs = nil // Reset errors for each test case
 
 			response := server.HandleMessage(
 				context.Background(),
@@ -836,37 +859,15 @@ func TestMCPServer_HandleInvalidMessages(t *testing.T) {
 			assert.Equal(t, tt.expectedErr, errorResponse.Error.Code)
 
 			if tt.validateErr != nil {
-				require.Len(t, errs, 1, "Expected exactly one error")
-				tt.validateErr(t, errs[0])
+				require.Len(t, hooks.GetHookContext().(*exampleHookContext).Errs, 1, "Expected exactly one error")
+				tt.validateErr(t, hooks.GetHookContext().(*exampleHookContext).Errs[0])
 			}
 		})
 	}
 }
 
 func TestMCPServer_HandleUndefinedHandlers(t *testing.T) {
-	var errs []error
-	type beforeResult struct {
-		method  mcp.MCPMethod
-		message any
-	}
-	type afterResult struct {
-		method  mcp.MCPMethod
-		message any
-		result  any
-	}
-	var beforeResults []beforeResult
-	var afterResults []afterResult
-	hooks := &ChainedHook{}
-	hooks.AddOnError(func(ctx context.Context, id any, method mcp.MCPMethod, message any, err error) {
-		errs = append(errs, err)
-	})
-	hooks.AddBeforeAny(func(ctx context.Context, id any, method mcp.MCPMethod, message any) {
-		beforeResults = append(beforeResults, beforeResult{method, message})
-	})
-	hooks.AddOnSuccess(func(ctx context.Context, id any, method mcp.MCPMethod, message any, result any) {
-		afterResults = append(afterResults, afterResult{method, message, result})
-	})
-
+	hooks := &exampleHook{}
 	server := NewMCPServer("test-server", "1.0.0",
 		WithResourceCapabilities(true, true),
 		WithPromptCapabilities(true),
@@ -946,8 +947,8 @@ func TestMCPServer_HandleUndefinedHandlers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errs = nil // Reset errors for each test case
-			beforeResults = nil
+			//errs = nil // Reset errors for each test case
+			//beforeResults = nil
 			response := server.HandleMessage(
 				context.Background(),
 				[]byte(tt.message),
@@ -959,21 +960,17 @@ func TestMCPServer_HandleUndefinedHandlers(t *testing.T) {
 			assert.Equal(t, tt.expectedErr, errorResponse.Error.Code)
 
 			if tt.validateCallbacks != nil {
-				require.Len(t, errs, 1, "Expected exactly one error")
-				require.Len(t, beforeResults, 1, "Expected exactly one before result")
-				require.Len(t, afterResults, 0, "Expected no after results because these calls generate errors")
-				tt.validateCallbacks(t, errs[0], beforeResults[0])
+				require.Len(t, hooks.GetHookContext().(*exampleHookContext).Errs, 1, "Expected exactly one error")
+				require.Len(t, hooks.GetHookContext().(*exampleHookContext).BeforeResults, 1, "Expected exactly one before result")
+				require.Len(t, hooks.GetHookContext().(*exampleHookContext).AfterResults, 0, "Expected no after results because these calls generate errors")
+				tt.validateCallbacks(t, hooks.GetHookContext().(*exampleHookContext).Errs[0], hooks.GetHookContext().(*exampleHookContext).BeforeResults[0])
 			}
 		})
 	}
 }
 
 func TestMCPServer_HandleMethodsWithoutCapabilities(t *testing.T) {
-	var errs []error
-	hooks := &ChainedHook{}
-	hooks.AddOnError(func(ctx context.Context, id any, method mcp.MCPMethod, message any, err error) {
-		errs = append(errs, err)
-	})
+	hooks := &exampleHook{}
 	hooksOption := WithHooks(hooks)
 
 	tests := []struct {
@@ -1029,8 +1026,6 @@ func TestMCPServer_HandleMethodsWithoutCapabilities(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errs = nil // Reset errors for each test case
-
 			server := NewMCPServer("test-server", "1.0.0", tt.options...)
 			response := server.HandleMessage(
 				context.Background(),
@@ -1042,9 +1037,9 @@ func TestMCPServer_HandleMethodsWithoutCapabilities(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, tt.expectedErr, errorResponse.Error.Code)
 
-			require.Len(t, errs, 1, "Expected exactly one error")
-			assert.True(t, errors.Is(errs[0], ErrUnsupported), "Error should be ErrUnsupported but was %v", errs[0])
-			assert.Contains(t, errs[0].Error(), tt.errString)
+			require.Len(t, hooks.GetHookContext().(*exampleHookContext).Errs, 1, "Expected exactly one error")
+			assert.True(t, errors.Is(hooks.GetHookContext().(*exampleHookContext).Errs[0], ErrUnsupported), "Error should be ErrUnsupported but was %v", hooks.GetHookContext().(*exampleHookContext).Errs[0])
+			assert.Contains(t, hooks.GetHookContext().(*exampleHookContext).Errs[0].Error(), tt.errString)
 		})
 	}
 }
@@ -1270,78 +1265,152 @@ func (f fakeSession) Initialized() bool {
 
 var _ ClientSession = fakeSession{}
 
-func TestMCPServer_WithHooks(t *testing.T) {
-	// Create hook counters to verify calls
-	var (
-		beforeAnyCount   int
-		onSuccessCount   int
-		onErrorCount     int
-		beforePingCount  int
-		afterPingCount   int
-		beforeToolsCount int
-		afterToolsCount  int
-	)
+// All request share one hook context
+var globalHookCtx = &globalHookContext{}
 
-	// Collectors for message and result types
-	var beforeAnyMessages []any
-	var onSuccessData []struct {
+type globalHookContext struct {
+	BeforeAnyMessages []any
+	BeforeAnyCount    *int
+	OnSuccessCount    *int
+	OnErrorCount      *int
+	BeforePingCount   *int
+	AfterPingCount    *int
+	BeforeToolsCount  *int
+	AfterToolsCount   *int
+	OnSuccessData     []struct {
 		msg any
 		res any
 	}
-	var beforePingMessages []*mcp.PingRequest
-	var afterPingData []struct {
-		msg *mcp.PingRequest
-		res *mcp.EmptyResult
+	BeforePingMessages []*mcp.PingRequest
+	AfterPingData      []struct {
+		Msg *mcp.PingRequest
+		Res *mcp.EmptyResult
 	}
+}
 
-	// Initialize hook handlers
-	hooks := &ChainedHook{}
+func (*globalHookContext) IsHookContext() {}
 
-	// Register "any" hooks with type verification
-	hooks.AddBeforeAny(func(ctx context.Context, id any, method mcp.MCPMethod, message any) {
-		beforeAnyCount++
-		// Only collect ping messages for our test
-		if method == mcp.MethodPing {
-			beforeAnyMessages = append(beforeAnyMessages, message)
-		}
-	})
+type globalHook struct {
+	HookContext HookContext
+}
 
-	hooks.AddOnSuccess(func(ctx context.Context, id any, method mcp.MCPMethod, message any, result any) {
-		onSuccessCount++
-		// Only collect ping responses for our test
-		if method == mcp.MethodPing {
-			onSuccessData = append(onSuccessData, struct {
-				msg any
-				res any
-			}{message, result})
-		}
-	})
+func (*globalHook) RegisterSession(ctx context.Context, session ClientSession) {
+}
 
-	hooks.AddOnError(func(ctx context.Context, id any, method mcp.MCPMethod, message any, err error) {
-		onErrorCount++
-	})
+func (*globalHook) CreateHookContext() HookContext {
+	// All request share one hook context
+	return globalHookCtx
+}
 
-	// Register method-specific hooks with type verification
-	hooks.AddBeforePing(func(ctx context.Context, id any, message *mcp.PingRequest) {
-		beforePingCount++
-		beforePingMessages = append(beforePingMessages, message)
-	})
+func (e *globalHook) GetHookContext() HookContext {
+	return e.HookContext
+}
 
-	hooks.AddAfterPing(func(ctx context.Context, id any, message *mcp.PingRequest, result *mcp.EmptyResult) {
-		afterPingCount++
-		afterPingData = append(afterPingData, struct {
-			msg *mcp.PingRequest
-			res *mcp.EmptyResult
+func (*globalHook) BeforeAny(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any) {
+	hookContext.(*exampleHookContext).BeforeResults = append(hookContext.(*exampleHookContext).BeforeResults, beforeResult{method, message})
+
+	newCount := (*hookContext.(*globalHookContext).BeforeAnyCount) + 1
+	hookContext.(*globalHookContext).BeforeAnyCount = &(newCount)
+	// Only collect ping messages for our test
+	if method == mcp.MethodPing {
+		hookContext.(*globalHookContext).BeforeAnyMessages = append(hookContext.(*globalHookContext).BeforeAnyMessages, message)
+	}
+}
+
+func (*globalHook) OnSuccess(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, result any) {
+	hookContext.(*exampleHookContext).AfterResults = append(hookContext.(*exampleHookContext).AfterResults, afterResult{method, message, result})
+
+	newCount := (*hookContext.(*globalHookContext).OnSuccessCount) + 1
+	hookContext.(*globalHookContext).OnSuccessCount = &(newCount)
+	// Only collect ping responses for our test
+	if method == mcp.MethodPing {
+		hookContext.(*globalHookContext).OnSuccessData = append(hookContext.(*globalHookContext).OnSuccessData, struct {
+			msg any
+			res any
 		}{message, result})
-	})
+	}
+}
 
-	hooks.AddBeforeListTools(func(ctx context.Context, id any, message *mcp.ListToolsRequest) {
-		beforeToolsCount++
-	})
+func (*globalHook) OnError(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, err error) {
+	hookContext.(*exampleHookContext).AddError(err)
+	newCount := (*hookContext.(*globalHookContext).OnErrorCount) + 1
+	hookContext.(*globalHookContext).OnErrorCount = &(newCount)
+}
 
-	hooks.AddAfterListTools(func(ctx context.Context, id any, message *mcp.ListToolsRequest, result *mcp.ListToolsResult) {
-		afterToolsCount++
-	})
+func (*globalHook) BeforeInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest) {
+	fmt.Printf("beforeInitialize: %v, %v\n", id, message)
+}
+
+func (*globalHook) AfterInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest, result *mcp.InitializeResult) {
+	fmt.Printf("afterInitialize: %v, %v, %v\n", id, message, result)
+}
+
+func (*globalHook) BeforePing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest) {
+	newCount := (*hookContext.(*globalHookContext).BeforePingCount) + 1
+	hookContext.(*globalHookContext).BeforePingCount = &(newCount)
+
+	hookContext.(*globalHookContext).BeforePingMessages = append(hookContext.(*globalHookContext).BeforePingMessages, message)
+}
+
+func (*globalHook) AfterPing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest, result *mcp.EmptyResult) {
+	newCount := (*hookContext.(*globalHookContext).AfterPingCount) + 1
+	hookContext.(*globalHookContext).AfterPingCount = &(newCount)
+
+	hookContext.(*globalHookContext).AfterPingData = append(hookContext.(*globalHookContext).AfterPingData, struct {
+		Msg *mcp.PingRequest
+		Res *mcp.EmptyResult
+	}{message, result})
+}
+
+func (*globalHook) BeforeListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest) {
+}
+
+func (*globalHook) AfterListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest, result *mcp.ListResourcesResult) {
+}
+
+func (*globalHook) BeforeListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest) {
+}
+
+func (*globalHook) AfterListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest, result *mcp.ListResourceTemplatesResult) {
+}
+
+func (*globalHook) BeforeReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest) {
+}
+
+func (*globalHook) AfterReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest, result *mcp.ReadResourceResult) {
+}
+
+func (*globalHook) BeforeListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest) {
+}
+
+func (*globalHook) AfterListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest, result *mcp.ListPromptsResult) {
+}
+
+func (*globalHook) BeforeGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest) {
+}
+
+func (*globalHook) AfterGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest, result *mcp.GetPromptResult) {
+}
+
+func (*globalHook) BeforeListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest) {
+	newCount := (*hookContext.(*globalHookContext).BeforeToolsCount) + 1
+	hookContext.(*globalHookContext).BeforeToolsCount = &(newCount)
+}
+
+func (*globalHook) AfterListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest, result *mcp.ListToolsResult) {
+	newCount := (*hookContext.(*globalHookContext).AfterToolsCount) + 1
+	hookContext.(*globalHookContext).AfterToolsCount = &(newCount)
+}
+
+func (*globalHook) BeforeCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest) {
+}
+
+func (*globalHook) AfterCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest, result *mcp.CallToolResult) {
+}
+
+func TestMCPServer_WithHooks(t *testing.T) {
+	// Initialize hook handlers
+	hooks := &globalHook{}
 
 	// Create a server with the hooks
 	server := NewMCPServer(
@@ -1402,30 +1471,30 @@ func TestMCPServer_WithHooks(t *testing.T) {
 	// Verify hook counts
 
 	// Method-specific hooks should be called exactly once
-	assert.Equal(t, 1, beforePingCount, "beforePing should be called once")
-	assert.Equal(t, 1, afterPingCount, "afterPing should be called once")
-	assert.Equal(t, 1, beforeToolsCount, "beforeListTools should be called once")
-	assert.Equal(t, 1, afterToolsCount, "afterListTools should be called once")
+	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).BeforePingCount, "beforePing should be called once")
+	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).AfterPingCount, "afterPing should be called once")
+	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).BeforeToolsCount, "beforeListTools should be called once")
+	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).AfterToolsCount, "afterListTools should be called once")
 
 	// General hooks should be called for all methods
 	// beforeAny is called for all 4 methods (initialize, ping, tools/list, tools/call)
-	assert.Equal(t, 4, beforeAnyCount, "beforeAny should be called for each method")
+	assert.Equal(t, 4, hooks.GetHookContext().(*globalHookContext).BeforeAnyCount, "beforeAny should be called for each method")
 	// onSuccess is called for all 3 success methods (initialize, ping, tools/list)
-	assert.Equal(t, 3, onSuccessCount, "onSuccess should be called after all successful invocations")
+	assert.Equal(t, 3, hooks.GetHookContext().(*globalHookContext).OnSuccessCount, "onSuccess should be called after all successful invocations")
 
 	// Error hook should be called once for the failed tools/call
-	assert.Equal(t, 1, onErrorCount, "onError should be called once")
+	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).OnErrorCount, "onError should be called once")
 
 	// Verify type matching between BeforeAny and BeforePing
-	require.Len(t, beforePingMessages, 1, "Expected one BeforePing message")
-	require.Len(t, beforeAnyMessages, 1, "Expected one BeforeAny Ping message")
-	assert.IsType(t, beforePingMessages[0], beforeAnyMessages[0], "BeforeAny message should be same type as BeforePing message")
+	require.Len(t, hooks.GetHookContext().(*globalHookContext).BeforePingMessages, 1, "Expected one BeforePing message")
+	require.Len(t, hooks.GetHookContext().(*globalHookContext).BeforeAnyMessages, 1, "Expected one BeforeAny Ping message")
+	assert.IsType(t, hooks.GetHookContext().(*globalHookContext).BeforePingMessages[0], hooks.GetHookContext().(*globalHookContext).BeforeAnyMessages[0], "BeforeAny message should be same type as BeforePing message")
 
 	// Verify type matching between OnSuccess and AfterPing
-	require.Len(t, afterPingData, 1, "Expected one AfterPing message/result pair")
-	require.Len(t, onSuccessData, 1, "Expected one OnSuccess Ping message/result pair")
-	assert.IsType(t, afterPingData[0].msg, onSuccessData[0].msg, "OnSuccess message should be same type as AfterPing message")
-	assert.IsType(t, afterPingData[0].res, onSuccessData[0].res, "OnSuccess result should be same type as AfterPing result")
+	require.Len(t, hooks.GetHookContext().(*globalHookContext).AfterPingData, 1, "Expected one AfterPing message/result pair")
+	require.Len(t, hooks.GetHookContext().(*globalHookContext).OnSuccessData, 1, "Expected one OnSuccess Ping message/result pair")
+	assert.IsType(t, hooks.GetHookContext().(*globalHookContext).AfterPingData[0].Msg, hooks.GetHookContext().(*globalHookContext).OnSuccessData[0].msg, "OnSuccess message should be same type as AfterPing message")
+	assert.IsType(t, hooks.GetHookContext().(*globalHookContext).AfterPingData[0].Res, hooks.GetHookContext().(*globalHookContext).OnSuccessData[0].res, "OnSuccess result should be same type as AfterPing result")
 }
 
 func TestMCPServer_WithRecover(t *testing.T) {
