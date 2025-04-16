@@ -162,7 +162,7 @@ type MCPServer struct {
 	capabilities           serverCapabilities
 	paginationLimit        *int
 	sessions               sync.Map
-	hooks                  *Hooks
+	hooks                  *ChainedHook
 }
 
 // serverKey is the context key for storing the server instance
@@ -200,7 +200,7 @@ func (s *MCPServer) RegisterSession(
 	if _, exists := s.sessions.LoadOrStore(sessionID, session); exists {
 		return fmt.Errorf("session %s is already registered", sessionID)
 	}
-	s.hooks.OnRegisterSession(ctx, session)
+	s.hooks.RegisterSession(ctx, session)
 	return nil
 }
 
@@ -331,7 +331,7 @@ func WithRecovery() ServerOption {
 // WithHooks allows adding hooks that will be called before or after
 // either [all] requests or before / after specific request methods, or else
 // prior to returning an error to the client.
-func WithHooks(hooks *Hooks) ServerOption {
+func WithHooks(hooks *ChainedHook) ServerOption {
 	return func(s *MCPServer) {
 		s.hooks = hooks
 	}

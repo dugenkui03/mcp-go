@@ -66,14 +66,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeInitialize(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeInitialize(ctx, baseMessage.ID, &request)
 			result, err = s.handleInitialize(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterInitialize(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterInitialize(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodPing:
 		var request mcp.PingRequest
@@ -85,14 +85,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforePing(ctx, baseMessage.ID, &request)
+			s.hooks.BeforePing(ctx, baseMessage.ID, &request)
 			result, err = s.handlePing(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterPing(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterPing(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodResourcesList:
 		var request mcp.ListResourcesRequest
@@ -110,14 +110,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeListResources(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeListResources(ctx, baseMessage.ID, &request)
 			result, err = s.handleListResources(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterListResources(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterListResources(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodResourcesTemplatesList:
 		var request mcp.ListResourceTemplatesRequest
@@ -135,14 +135,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeListResourceTemplates(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeListResourceTemplates(ctx, baseMessage.ID, &request)
 			result, err = s.handleListResourceTemplates(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterListResourceTemplates(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterListResourceTemplates(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodResourcesRead:
 		var request mcp.ReadResourceRequest
@@ -160,14 +160,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeReadResource(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeReadResource(ctx, baseMessage.ID, &request)
 			result, err = s.handleReadResource(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterReadResource(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterReadResource(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodPromptsList:
 		var request mcp.ListPromptsRequest
@@ -185,14 +185,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeListPrompts(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeListPrompts(ctx, baseMessage.ID, &request)
 			result, err = s.handleListPrompts(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterListPrompts(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterListPrompts(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodPromptsGet:
 		var request mcp.GetPromptRequest
@@ -210,14 +210,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeGetPrompt(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeGetPrompt(ctx, baseMessage.ID, &request)
 			result, err = s.handleGetPrompt(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterGetPrompt(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterGetPrompt(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodToolsList:
 		var request mcp.ListToolsRequest
@@ -235,14 +235,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeListTools(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeListTools(ctx, baseMessage.ID, &request)
 			result, err = s.handleListTools(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterListTools(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterListTools(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	case mcp.MethodToolsCall:
 		var request mcp.CallToolRequest
@@ -260,14 +260,14 @@ func (s *MCPServer) HandleMessage(
 				err:  &UnparseableMessageError{message: message, err: unmarshalErr, method: baseMessage.Method},
 			}
 		} else {
-			s.hooks.OnBeforeCallTool(ctx, baseMessage.ID, &request)
+			s.hooks.BeforeCallTool(ctx, baseMessage.ID, &request)
 			result, err = s.handleToolCall(ctx, baseMessage.ID, request)
 		}
 		if err != nil {
 			s.hooks.OnError(ctx, baseMessage.ID, baseMessage.Method, &request, err)
 			return err.ToJSONRPCError()
 		}
-		s.hooks.OnAfterCallTool(ctx, baseMessage.ID, &request, result)
+		s.hooks.AfterCallTool(ctx, baseMessage.ID, &request, result)
 		return createResponse(baseMessage.ID, *result)
 	default:
 		return createErrorResponse(

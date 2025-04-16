@@ -695,12 +695,94 @@ func TestMCPServer_PromptHandling(t *testing.T) {
 	}
 }
 
+type ErrorHolderContext struct {
+	errs []error
+}
+
+func (ErrorHolderContext) IsHookContext() {}
+
+type exampleHook struct{}
+
+func (exampleHook) RegisterSession(ctx context.Context, hookContext HookContext, session ClientSession) {
+}
+
+func (exampleHook) CreateHookContext() HookContext {
+	return nil
+}
+
+func (exampleHook) BeforeAny(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any) {
+	fmt.Printf("beforeAny: %s, %v, %v\n", method, id, message)
+}
+
+func (exampleHook) OnSuccess(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, result any) {
+	fmt.Printf("onSuccess: %s, %v, %v, %v\n", method, id, message, result)
+}
+
+func (exampleHook) OnError(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, err error) {
+	fmt.Printf("onError: %s, %v, %v, %v\n", method, id, message, err)
+}
+
+func (exampleHook) BeforeInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest) {
+	fmt.Printf("beforeInitialize: %v, %v\n", id, message)
+}
+
+func (exampleHook) AfterInitialize(ctx context.Context, hookContext HookContext, id any, message *mcp.InitializeRequest, result *mcp.InitializeResult) {
+	fmt.Printf("afterInitialize: %v, %v, %v\n", id, message, result)
+}
+
+func (exampleHook) BeforePing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest) {
+}
+
+func (exampleHook) AfterPing(ctx context.Context, hookContext HookContext, id any, message *mcp.PingRequest, result *mcp.EmptyResult) {
+}
+
+func (exampleHook) BeforeListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest) {
+}
+
+func (exampleHook) AfterListResources(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourcesRequest, result *mcp.ListResourcesResult) {
+}
+
+func (exampleHook) BeforeListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest) {
+}
+
+func (exampleHook) AfterListResourceTemplates(ctx context.Context, hookContext HookContext, id any, message *mcp.ListResourceTemplatesRequest, result *mcp.ListResourceTemplatesResult) {
+}
+
+func (exampleHook) BeforeReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest) {
+}
+
+func (exampleHook) AfterReadResource(ctx context.Context, hookContext HookContext, id any, message *mcp.ReadResourceRequest, result *mcp.ReadResourceResult) {
+}
+
+func (exampleHook) BeforeListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest) {
+}
+
+func (exampleHook) AfterListPrompts(ctx context.Context, hookContext HookContext, id any, message *mcp.ListPromptsRequest, result *mcp.ListPromptsResult) {
+}
+
+func (exampleHook) BeforeGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest) {
+}
+
+func (exampleHook) AfterGetPrompt(ctx context.Context, hookContext HookContext, id any, message *mcp.GetPromptRequest, result *mcp.GetPromptResult) {
+}
+
+func (exampleHook) BeforeListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest) {
+	fmt.Printf("beforeCallTool: %v, %v\n", id, message)
+}
+
+func (exampleHook) AfterListTools(ctx context.Context, hookContext HookContext, id any, message *mcp.ListToolsRequest, result *mcp.ListToolsResult) {
+	fmt.Printf("afterCallTool: %v, %v, %v\n", id, message, result)
+}
+
+func (exampleHook) BeforeCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest) {
+}
+
+func (exampleHook) AfterCallTool(ctx context.Context, hookContext HookContext, id any, message *mcp.CallToolRequest, result *mcp.CallToolResult) {
+}
+
 func TestMCPServer_HandleInvalidMessages(t *testing.T) {
-	var errs []error
-	hooks := &Hooks{}
-	hooks.AddOnError(func(ctx context.Context, id any, method mcp.MCPMethod, message any, err error) {
-		errs = append(errs, err)
-	})
+	hooks := &ChainedHook{}
+	hooks.Add(&exampleHook{})
 
 	server := NewMCPServer("test-server", "1.0.0", WithHooks(hooks))
 
@@ -774,7 +856,7 @@ func TestMCPServer_HandleUndefinedHandlers(t *testing.T) {
 	}
 	var beforeResults []beforeResult
 	var afterResults []afterResult
-	hooks := &Hooks{}
+	hooks := &ChainedHook{}
 	hooks.AddOnError(func(ctx context.Context, id any, method mcp.MCPMethod, message any, err error) {
 		errs = append(errs, err)
 	})
@@ -888,7 +970,7 @@ func TestMCPServer_HandleUndefinedHandlers(t *testing.T) {
 
 func TestMCPServer_HandleMethodsWithoutCapabilities(t *testing.T) {
 	var errs []error
-	hooks := &Hooks{}
+	hooks := &ChainedHook{}
 	hooks.AddOnError(func(ctx context.Context, id any, method mcp.MCPMethod, message any, err error) {
 		errs = append(errs, err)
 	})
@@ -1213,7 +1295,7 @@ func TestMCPServer_WithHooks(t *testing.T) {
 	}
 
 	// Initialize hook handlers
-	hooks := &Hooks{}
+	hooks := &ChainedHook{}
 
 	// Register "any" hooks with type verification
 	hooks.AddBeforeAny(func(ctx context.Context, id any, method mcp.MCPMethod, message any) {
