@@ -28,6 +28,8 @@ const (
 	COMPLEX PromptName = "complex_prompt"
 )
 
+type exampleHook struct{}
+
 func NewMCPServer() *server.MCPServer {
 
 	hooks := &server.Hooks{}

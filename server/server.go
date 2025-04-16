@@ -200,7 +200,7 @@ func (s *MCPServer) RegisterSession(
 	if _, exists := s.sessions.LoadOrStore(sessionID, session); exists {
 		return fmt.Errorf("session %s is already registered", sessionID)
 	}
-	s.hooks.RegisterSession(ctx, session)
+	s.hooks.OnRegisterSession(ctx, session)
 	return nil
 }
 
