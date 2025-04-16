@@ -714,6 +714,9 @@ type exampleHookContext struct {
 func (*exampleHookContext) IsHookContext() {}
 
 func (e *exampleHookContext) AddError(err error) {
+	if e.Errs == nil {
+		e.Errs = make([]error, 0)
+	}
 	e.Errs = append(e.Errs, err)
 }
 
@@ -724,9 +727,10 @@ type exampleHook struct {
 func (*exampleHook) RegisterSession(ctx context.Context, session ClientSession) {
 }
 
-func (*exampleHook) CreateHookContext() HookContext {
+func (e *exampleHook) CreateHookContext() HookContext {
 	hookContext := &exampleHookContext{}
 	hookContext.Errs = make([]error, 0)
+	e.HookContext = hookContext
 
 	return hookContext
 }
@@ -736,10 +740,17 @@ func (e *exampleHook) GetHookContext() HookContext {
 }
 
 func (*exampleHook) BeforeAny(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any) {
+	if hookContext.(*exampleHookContext).BeforeResults == nil {
+		hookContext.(*exampleHookContext).BeforeResults = make([]beforeResult, 0)
+	}
 	hookContext.(*exampleHookContext).BeforeResults = append(hookContext.(*exampleHookContext).BeforeResults, beforeResult{method, message})
 }
 
 func (*exampleHook) OnSuccess(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, result any) {
+	if hookContext.(*exampleHookContext).AfterResults == nil {
+		hookContext.(*exampleHookContext).AfterResults = make([]afterResult, (0))
+	}
+
 	hookContext.(*exampleHookContext).AfterResults = append(hookContext.(*exampleHookContext).AfterResults, afterResult{method, message, result})
 }
 
@@ -1266,7 +1277,26 @@ func (f fakeSession) Initialized() bool {
 var _ ClientSession = fakeSession{}
 
 // All request share one hook context
-var globalHookCtx = &globalHookContext{}
+var zeroValue = 0
+var globalHookCtx = &globalHookContext{
+	BeforeAnyMessages: make([]any, 0),
+	BeforeAnyCount:    &zeroValue,
+	OnSuccessCount:    &zeroValue,
+	OnErrorCount:      &zeroValue,
+	BeforePingCount:   &zeroValue,
+	AfterPingCount:    &zeroValue,
+	BeforeToolsCount:  &zeroValue,
+	AfterToolsCount:   &zeroValue,
+	OnSuccessData: make([]struct {
+		msg any
+		res any
+	}, 0),
+	BeforePingMessages: make([]*mcp.PingRequest, 0),
+	AfterPingData: make([]struct {
+		Msg *mcp.PingRequest
+		Res *mcp.EmptyResult
+	}, 0),
+}
 
 type globalHookContext struct {
 	BeforeAnyMessages []any
@@ -1291,7 +1321,6 @@ type globalHookContext struct {
 func (*globalHookContext) IsHookContext() {}
 
 type globalHook struct {
-	HookContext HookContext
 }
 
 func (*globalHook) RegisterSession(ctx context.Context, session ClientSession) {
@@ -1303,7 +1332,7 @@ func (*globalHook) CreateHookContext() HookContext {
 }
 
 func (e *globalHook) GetHookContext() HookContext {
-	return e.HookContext
+	return globalHookCtx
 }
 
 func (*globalHook) BeforeAny(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any) {
@@ -1332,7 +1361,6 @@ func (*globalHook) OnSuccess(ctx context.Context, hookContext HookContext, id an
 }
 
 func (*globalHook) OnError(ctx context.Context, hookContext HookContext, id any, method mcp.MCPMethod, message any, err error) {
-	hookContext.(*exampleHookContext).AddError(err)
 	newCount := (*hookContext.(*globalHookContext).OnErrorCount) + 1
 	hookContext.(*globalHookContext).OnErrorCount = &(newCount)
 }
@@ -1410,7 +1438,7 @@ func (*globalHook) AfterCallTool(ctx context.Context, hookContext HookContext, i
 
 func TestMCPServer_WithHooks(t *testing.T) {
 	// Initialize hook handlers
-	hooks := &globalHook{}
+	hooks := &globalHook{} // note
 
 	// Create a server with the hooks
 	server := NewMCPServer(
@@ -1455,7 +1483,7 @@ func TestMCPServer_WithHooks(t *testing.T) {
 	// Verify success response
 	assert.IsType(t, mcp.JSONRPCResponse{}, toolsListResponse)
 
-	// Test 3: Verify error hooks with invalid tool
+	// Test 3: Verify error hooks with invalid tool // note
 	errorResponse := server.HandleMessage(context.Background(), []byte(`{
 		"jsonrpc": "2.0",
 		"id": 4,
@@ -1471,19 +1499,19 @@ func TestMCPServer_WithHooks(t *testing.T) {
 	// Verify hook counts
 
 	// Method-specific hooks should be called exactly once
-	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).BeforePingCount, "beforePing should be called once")
-	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).AfterPingCount, "afterPing should be called once")
-	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).BeforeToolsCount, "beforeListTools should be called once")
-	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).AfterToolsCount, "afterListTools should be called once")
+	assert.Equal(t, 1, *hooks.GetHookContext().(*globalHookContext).BeforePingCount, "beforePing should be called once")
+	assert.Equal(t, 1, *hooks.GetHookContext().(*globalHookContext).AfterPingCount, "afterPing should be called once")
+	assert.Equal(t, 1, *hooks.GetHookContext().(*globalHookContext).BeforeToolsCount, "beforeListTools should be called once")
+	assert.Equal(t, 1, *hooks.GetHookContext().(*globalHookContext).AfterToolsCount, "afterListTools should be called once")
 
 	// General hooks should be called for all methods
 	// beforeAny is called for all 4 methods (initialize, ping, tools/list, tools/call)
-	assert.Equal(t, 4, hooks.GetHookContext().(*globalHookContext).BeforeAnyCount, "beforeAny should be called for each method")
+	assert.Equal(t, 4, *hooks.GetHookContext().(*globalHookContext).BeforeAnyCount, "beforeAny should be called for each method")
 	// onSuccess is called for all 3 success methods (initialize, ping, tools/list)
-	assert.Equal(t, 3, hooks.GetHookContext().(*globalHookContext).OnSuccessCount, "onSuccess should be called after all successful invocations")
+	assert.Equal(t, 3, *hooks.GetHookContext().(*globalHookContext).OnSuccessCount, "onSuccess should be called after all successful invocations")
 
 	// Error hook should be called once for the failed tools/call
-	assert.Equal(t, 1, hooks.GetHookContext().(*globalHookContext).OnErrorCount, "onError should be called once")
+	assert.Equal(t, 1, *hooks.GetHookContext().(*globalHookContext).OnErrorCount, "onError should be called once")
 
 	// Verify type matching between BeforeAny and BeforePing
 	require.Len(t, hooks.GetHookContext().(*globalHookContext).BeforePingMessages, 1, "Expected one BeforePing message")
