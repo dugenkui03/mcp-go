@@ -26,7 +26,6 @@ type sseSession struct {
 	requestID           atomic.Int64
 	notificationChannel chan mcp.JSONRPCNotification // note 发送消息的通道
 	initialized         atomic.Bool
-	loggingLevel        atomic.Value
 	tools               sync.Map // stores session-specific tools
 	logger              sseLogger
 }
@@ -52,8 +51,6 @@ func (s *sseSession) NotificationChannel() chan<- mcp.JSONRPCNotification {
 }
 
 func (s *sseSession) Initialize() {
-	// set default logging level
-	s.loggingLevel.Store(mcp.LoggingLevelError)
 	s.initialized.Store(true)
 }
 
@@ -61,7 +58,7 @@ func (s *sseSession) Initialized() bool {
 	return s.initialized.Load()
 }
 
-func (s *sseSession) GetLogger() *sseLogger {
+func (s *sseSession) GetLogger() Logger {
 	return &s.logger
 }
 

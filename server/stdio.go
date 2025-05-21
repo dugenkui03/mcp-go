@@ -53,7 +53,7 @@ func WithStdioContextFunc(fn StdioContextFunc) StdioOption {
 type stdioSession struct {
 	notifications chan mcp.JSONRPCNotification // note 发送消息的通道
 	initialized   atomic.Bool
-	loggingLevel  atomic.Value
+	logger        stdioLogger
 }
 
 func (s *stdioSession) SessionID() string {
@@ -65,8 +65,6 @@ func (s *stdioSession) NotificationChannel() chan<- mcp.JSONRPCNotification {
 }
 
 func (s *stdioSession) Initialize() {
-	// set default logging level
-	s.loggingLevel.Store(mcp.LoggingLevelError)
 	s.initialized.Store(true)
 }
 
@@ -74,57 +72,70 @@ func (s *stdioSession) Initialized() bool {
 	return s.initialized.Load()
 }
 
-func (s *stdioSession) SetLogLevel(level mcp.LoggingLevel) {
-	s.loggingLevel.Store(level)
+func (s *stdioSession) GetLogger() Logger {
+	return &s.logger
 }
 
-func (s *stdioSession) GetLogLevel() mcp.LoggingLevel {
-	level := s.loggingLevel.Load()
+type stdioLogger struct {
+	loggingLevel atomic.Value
+	server       *MCPServer
+}
+
+func (logger *stdioLogger) SetLogLevel(level mcp.LoggingLevel) {
+	logger.loggingLevel.Store(level)
+}
+
+func (logger *stdioLogger) GetLogLevel() mcp.LoggingLevel {
+	level := logger.loggingLevel.Load()
 	if level == nil {
 		return mcp.LoggingLevelError
 	}
 	return level.(mcp.LoggingLevel)
 }
 
-func (s *stdioSession) Log(ctx context.Context, level mcp.LoggingLevel, message string) {
+func (logger *stdioLogger) Log(ctx context.Context, level mcp.LoggingLevel, message string) {
 	// only send log if the log level is high enough
-	if s.loggingLevel.Load().(mcp.LoggingLevel) < level {
+	if logger.loggingLevel.Load().(mcp.LoggingLevel) < level {
 		return
 	}
 
-	// todo
+	_ = logger.server.SendNotificationToClient(ctx, mcp.MethodNotificationMessage, map[string]any{
+		"level":   level,
+		"logger":  fmt.Sprintf("mcp-server-%s-logger", logger.server.name),
+		"message": message,
+	})
 }
 
-func (s *stdioSession) Debug(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelDebug, message)
+func (logger *stdioLogger) Debug(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelDebug, message)
 }
 
-func (s *stdioSession) Info(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelInfo, message)
+func (logger *stdioLogger) Info(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelInfo, message)
 }
 
-func (s *stdioSession) Notice(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelNotice, message)
+func (logger *stdioLogger) Notice(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelNotice, message)
 }
 
-func (s *stdioSession) Warning(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelWarning, message)
+func (logger *stdioLogger) Warning(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelWarning, message)
 }
 
-func (s *stdioSession) Error(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelError, message)
+func (logger *stdioLogger) Error(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelError, message)
 }
 
-func (s *stdioSession) Critical(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelCritical, message)
+func (logger *stdioLogger) Critical(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelCritical, message)
 }
 
-func (s *stdioSession) Alert(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelAlert, message)
+func (logger *stdioLogger) Alert(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelAlert, message)
 }
 
-func (s *stdioSession) Emergency(ctx context.Context, message string) {
-	s.Log(ctx, mcp.LoggingLevelEmergency, message)
+func (logger *stdioLogger) Emergency(ctx context.Context, message string) {
+	logger.Log(ctx, mcp.LoggingLevelEmergency, message)
 }
 
 var (
