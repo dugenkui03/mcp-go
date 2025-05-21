@@ -72,10 +72,6 @@ func (s *stdioSession) Initialized() bool {
 	return s.initialized.Load()
 }
 
-func (s *stdioSession) GetLogger() Logger {
-	return &s.logger
-}
-
 type stdioLogger struct {
 	loggingLevel atomic.Value
 	server       *MCPServer

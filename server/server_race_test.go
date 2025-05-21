@@ -49,7 +49,7 @@ func TestRaceConditions(t *testing.T) {
 		srv.AddTool(mcp.Tool{
 			Name:        name,
 			Description: "Test tool",
-		}, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		}, func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return &mcp.CallToolResult{}, nil
 		})
 	})
@@ -60,7 +60,7 @@ func TestRaceConditions(t *testing.T) {
 		srv.AddTool(mcp.Tool{
 			Name:        name,
 			Description: "Temporary tool",
-		}, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		}, func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return &mcp.CallToolResult{}, nil
 		})
 		srv.DeleteTools(name)
@@ -68,8 +68,8 @@ func TestRaceConditions(t *testing.T) {
 
 	runConcurrentOperation(&wg, testDuration, "add-middleware", func() {
 		middleware := func(next ToolHandlerFunc) ToolHandlerFunc {
-			return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-				return next(ctx, req)
+			return func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+				return next(ctx, session, request)
 			}
 		}
 		WithToolHandlerMiddleware(middleware)(srv)
@@ -91,7 +91,7 @@ func TestRaceConditions(t *testing.T) {
 	srv.AddTool(mcp.Tool{
 		Name:        "persistent-tool",
 		Description: "Test tool that always exists",
-	}, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	}, func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return &mcp.CallToolResult{}, nil
 	})
 

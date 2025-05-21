@@ -58,10 +58,6 @@ func (s *sseSession) Initialized() bool {
 	return s.initialized.Load()
 }
 
-func (s *sseSession) GetLogger() Logger {
-	return &s.logger
-}
-
 func (s *sseSession) GetSessionTools() map[string]ServerTool {
 	tools := make(map[string]ServerTool)
 	s.tools.Range(func(key, value any) bool {

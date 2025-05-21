@@ -21,8 +21,7 @@ type ClientSession interface {
 // SessionWithLogging is an extension of ClientSession that can receive log message notifications and set log level
 type SessionWithLogging interface {
 	ClientSession
-	//GetLogger returns the logger instance
-	GetLogger() Logger
+	Logger
 }
 
 type Logger interface {

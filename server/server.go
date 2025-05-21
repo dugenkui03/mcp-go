@@ -37,7 +37,7 @@ type ResourceTemplateHandlerFunc func(ctx context.Context, request mcp.ReadResou
 type PromptHandlerFunc func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error)
 
 // ToolHandlerFunc handles tool calls with given arguments.
-type ToolHandlerFunc func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error)
+type ToolHandlerFunc func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error)
 
 // ToolHandlerMiddleware is a middleware function that wraps a ToolHandlerFunc.
 type ToolHandlerMiddleware func(ToolHandlerFunc) ToolHandlerFunc
@@ -591,7 +591,7 @@ func (s *MCPServer) handleSetLevel(
 		}
 	}
 
-	sessionLogging.SetLogLevel(level)
+	sessionLogging.GetLogger().SetLogLevel(level)
 
 	return &mcp.EmptyResult{}, nil
 }
@@ -979,7 +979,7 @@ func (s *MCPServer) handleToolCall(
 		finalHandler = mw[i](finalHandler)
 	}
 
-	result, err := finalHandler(ctx, request)
+	result, err := finalHandler(ctx, session, request)
 	if err != nil {
 		return nil, &requestError{
 			id:   id,
