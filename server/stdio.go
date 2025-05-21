@@ -51,9 +51,9 @@ func WithStdioContextFunc(fn StdioContextFunc) StdioOption {
 
 // stdioSession is a static client session, since stdio has only one client.
 type stdioSession struct {
-	notifications   chan mcp.JSONRPCNotification
-	initialized     atomic.Bool
-	loggingLevel    atomic.Value
+	notifications chan mcp.JSONRPCNotification // note 发送消息的通道
+	initialized   atomic.Bool
+	loggingLevel  atomic.Value
 }
 
 func (s *stdioSession) SessionID() string {
@@ -74,11 +74,11 @@ func (s *stdioSession) Initialized() bool {
 	return s.initialized.Load()
 }
 
-func(s *stdioSession) SetLogLevel(level mcp.LoggingLevel) {
+func (s *stdioSession) SetLogLevel(level mcp.LoggingLevel) {
 	s.loggingLevel.Store(level)
 }
 
-func(s *stdioSession) GetLogLevel() mcp.LoggingLevel {
+func (s *stdioSession) GetLogLevel() mcp.LoggingLevel {
 	level := s.loggingLevel.Load()
 	if level == nil {
 		return mcp.LoggingLevelError
@@ -86,9 +86,50 @@ func(s *stdioSession) GetLogLevel() mcp.LoggingLevel {
 	return level.(mcp.LoggingLevel)
 }
 
+func (s *stdioSession) Log(ctx context.Context, level mcp.LoggingLevel, message string) {
+	// only send log if the log level is high enough
+	if s.loggingLevel.Load().(mcp.LoggingLevel) < level {
+		return
+	}
+
+	// todo
+}
+
+func (s *stdioSession) Debug(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelDebug, message)
+}
+
+func (s *stdioSession) Info(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelInfo, message)
+}
+
+func (s *stdioSession) Notice(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelNotice, message)
+}
+
+func (s *stdioSession) Warning(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelWarning, message)
+}
+
+func (s *stdioSession) Error(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelError, message)
+}
+
+func (s *stdioSession) Critical(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelCritical, message)
+}
+
+func (s *stdioSession) Alert(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelAlert, message)
+}
+
+func (s *stdioSession) Emergency(ctx context.Context, message string) {
+	s.Log(ctx, mcp.LoggingLevelEmergency, message)
+}
+
 var (
-	_ ClientSession			= (*stdioSession)(nil)
-	_ SessionWithLogging 	= (*stdioSession)(nil)
+	_ ClientSession      = (*stdioSession)(nil)
+	_ SessionWithLogging = (*stdioSession)(nil)
 )
 
 var stdioSessionInstance = stdioSession{
@@ -223,6 +264,8 @@ func (s *StdioServer) Listen(
 		return fmt.Errorf("register session: %w", err)
 	}
 	defer s.server.UnregisterSession(ctx, stdioSessionInstance.SessionID())
+	// note WithContext 是特么自定义方法，不是 golang 的
+	// note 一个client链接对应一个 session
 	ctx = s.server.WithContext(ctx, &stdioSessionInstance)
 
 	// Add in any custom context.

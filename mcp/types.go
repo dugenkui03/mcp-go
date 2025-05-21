@@ -5,8 +5,8 @@ package mcp
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"maps"
+	"strconv"
 
 	"github.com/yosida95/uritemplate/v3"
 )
@@ -67,6 +67,8 @@ const (
 	// MethodNotificationToolsListChanged notifies when the list of available tools changes.
 	// https://spec.modelcontextprotocol.io/specification/2024-11-05/server/tools/list_changed/
 	MethodNotificationToolsListChanged = "notifications/tools/list_changed"
+
+	MethodNotificationMessage = "notifications/message"
 )
 
 type URITemplate struct {
@@ -310,6 +312,9 @@ type JSONRPCRequest struct {
 type JSONRPCNotification struct {
 	JSONRPC string `json:"jsonrpc"`
 	Notification
+	LoggingMessageNotification
+	CancelledNotification
+	ProgressNotification
 }
 
 // JSONRPCResponse represents a successful (non-error) response to a request.
@@ -721,17 +726,17 @@ type LoggingMessageNotification struct {
 //
 // These map to syslog message severities, as specified in RFC-5424:
 // https://datatracker.ietf.org/doc/html/rfc5424#section-6.2.1
-type LoggingLevel string
+type LoggingLevel int
 
 const (
-	LoggingLevelDebug     LoggingLevel = "debug"
-	LoggingLevelInfo      LoggingLevel = "info"
-	LoggingLevelNotice    LoggingLevel = "notice"
-	LoggingLevelWarning   LoggingLevel = "warning"
-	LoggingLevelError     LoggingLevel = "error"
-	LoggingLevelCritical  LoggingLevel = "critical"
-	LoggingLevelAlert     LoggingLevel = "alert"
-	LoggingLevelEmergency LoggingLevel = "emergency"
+	LoggingLevelDebug LoggingLevel = iota + 1
+	LoggingLevelInfo
+	LoggingLevelNotice
+	LoggingLevelWarning
+	LoggingLevelError
+	LoggingLevelCritical
+	LoggingLevelAlert
+	LoggingLevelEmergency
 )
 
 /* Sampling */

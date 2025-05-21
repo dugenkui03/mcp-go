@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -22,10 +21,24 @@ type ClientSession interface {
 // SessionWithLogging is an extension of ClientSession that can receive log message notifications and set log level
 type SessionWithLogging interface {
 	ClientSession
+	//GetLogger returns the logger instance
+	GetLogger() Logger
+}
+
+type Logger interface {
 	// SetLogLevel sets the minimum log level
 	SetLogLevel(level mcp.LoggingLevel)
 	// GetLogLevel retrieves the minimum log level
 	GetLogLevel() mcp.LoggingLevel
+	Log(ctx context.Context, level mcp.LoggingLevel, message string)
+	Debug(ctx context.Context, message string)
+	Info(ctx context.Context, message string)
+	Notice(ctx context.Context, message string)
+	Warning(ctx context.Context, message string)
+	Error(ctx context.Context, message string)
+	Critical(ctx context.Context, message string)
+	Alert(ctx context.Context, message string)
+	Emergency(ctx context.Context, message string)
 }
 
 // SessionWithTools is an extension of ClientSession that can store session-specific tool data
@@ -90,14 +103,23 @@ func (s *MCPServer) SendNotificationToAllClients(
 	method string,
 	params map[string]any,
 ) {
-	notification := mcp.JSONRPCNotification{
-		JSONRPC: mcp.JSONRPC_VERSION,
-		Notification: mcp.Notification{
-			Method: method,
-			Params: mcp.NotificationParams{
-				AdditionalFields: params,
+	var notification mcp.JSONRPCNotification
+	switch method {
+	case mcp.MethodNotificationMessage:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC:                    mcp.JSONRPC_VERSION,
+			LoggingMessageNotification: mcp.NewLoggingMessageNotification(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
+		}
+	default:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC: mcp.JSONRPC_VERSION,
+			Notification: mcp.Notification{
+				Method: method,
+				Params: mcp.NotificationParams{
+					AdditionalFields: params,
+				},
 			},
-		},
+		}
 	}
 
 	s.sessions.Range(func(k, v any) bool {
@@ -137,14 +159,23 @@ func (s *MCPServer) SendNotificationToClient(
 		return ErrNotificationNotInitialized
 	}
 
-	notification := mcp.JSONRPCNotification{
-		JSONRPC: mcp.JSONRPC_VERSION,
-		Notification: mcp.Notification{
-			Method: method,
-			Params: mcp.NotificationParams{
-				AdditionalFields: params,
+	var notification mcp.JSONRPCNotification
+	switch method {
+	case mcp.MethodNotificationMessage:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC:                    mcp.JSONRPC_VERSION,
+			LoggingMessageNotification: mcp.NewLoggingMessageNotification(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
+		}
+	default:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC: mcp.JSONRPC_VERSION,
+			Notification: mcp.Notification{
+				Method: method,
+				Params: mcp.NotificationParams{
+					AdditionalFields: params,
+				},
 			},
-		},
+		}
 	}
 
 	select {
@@ -184,14 +215,23 @@ func (s *MCPServer) SendNotificationToSpecificClient(
 		return ErrSessionNotInitialized
 	}
 
-	notification := mcp.JSONRPCNotification{
-		JSONRPC: mcp.JSONRPC_VERSION,
-		Notification: mcp.Notification{
-			Method: method,
-			Params: mcp.NotificationParams{
-				AdditionalFields: params,
+	var notification mcp.JSONRPCNotification
+	switch method {
+	case mcp.MethodNotificationMessage:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC:                    mcp.JSONRPC_VERSION,
+			LoggingMessageNotification: mcp.NewLoggingMessageNotification(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
+		}
+	default:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC: mcp.JSONRPC_VERSION,
+			Notification: mcp.Notification{
+				Method: method,
+				Params: mcp.NotificationParams{
+					AdditionalFields: params,
+				},
 			},
-		},
+		}
 	}
 
 	select {

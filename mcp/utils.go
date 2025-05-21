@@ -171,7 +171,7 @@ func NewLoggingMessageNotification(
 ) LoggingMessageNotification {
 	return LoggingMessageNotification{
 		Notification: Notification{
-			Method: "notifications/message",
+			Method: MethodNotificationMessage,
 		},
 		Params: struct {
 			Level  LoggingLevel `json:"level"`

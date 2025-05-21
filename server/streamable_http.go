@@ -485,7 +485,7 @@ func (s *sessionToolsStore) set(sessionID string, tools map[string]ServerTool) {
 // When in GET handlers(listening), it's a real session, and will be registered in the MCP server.
 type streamableHttpSession struct {
 	sessionID           string
-	notificationChannel chan mcp.JSONRPCNotification // server -> client notifications
+	notificationChannel chan mcp.JSONRPCNotification // server -> client notifications // note 发送消息的通道
 	tools               *sessionToolsStore
 }
 
