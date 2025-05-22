@@ -22,10 +22,9 @@ var _ ClientRequest = &CallToolRequest{}
 var _ ClientRequest = &ListToolsRequest{}
 
 // ClientNotification types
-var _ ClientNotification = &CancelledNotification{}
-var _ ClientNotification = &ProgressNotification{}
+var _ ClientNotification = &CancelledNotificationParams{}
+var _ ClientNotification = &ProgressNotificationParams{}
 var _ ClientNotification = &InitializedNotification{}
-var _ ClientNotification = &RootsListChangedNotification{}
 
 // ClientResult types
 var _ ClientResult = &EmptyResult{}
@@ -38,13 +37,11 @@ var _ ServerRequest = &CreateMessageRequest{}
 var _ ServerRequest = &ListRootsRequest{}
 
 // ServerNotification types
-var _ ServerNotification = &CancelledNotification{}
-var _ ServerNotification = &ProgressNotification{}
-var _ ServerNotification = &LoggingMessageNotification{}
+var _ ServerNotification = &CancelledNotificationParams{}
+var _ ServerNotification = &ProgressNotificationParams{}
+var _ ServerNotification = &LoggingMessageNotificationParams{}
 var _ ServerNotification = &ResourceUpdatedNotification{}
 var _ ServerNotification = &ResourceListChangedNotification{}
-var _ ServerNotification = &ToolListChangedNotification{}
-var _ ServerNotification = &PromptListChangedNotification{}
 
 // ServerResult types
 var _ ServerResult = &EmptyResult{}
@@ -138,11 +135,8 @@ func NewProgressNotification(
 	progress float64,
 	total *float64,
 	message *string,
-) ProgressNotification {
-	notification := ProgressNotification{
-		Notification: Notification{
-			Method: "notifications/progress",
-		},
+) ProgressNotificationParams {
+	notification := ProgressNotificationParams{
 		Params: struct {
 			ProgressToken ProgressToken `json:"progressToken"`
 			Progress      float64       `json:"progress"`
@@ -162,17 +156,14 @@ func NewProgressNotification(
 	return notification
 }
 
-// NewLoggingMessageNotification
+// NewLoggingMessageNotificationParams
 // Helper function for creating a logging message notification
-func NewLoggingMessageNotification(
+func NewLoggingMessageNotificationParams(
 	level LoggingLevel,
 	logger string,
 	data any,
-) LoggingMessageNotification {
-	return LoggingMessageNotification{
-		Notification: Notification{
-			Method: MethodNotificationMessage,
-		},
+) LoggingMessageNotificationParams {
+	return LoggingMessageNotificationParams{
 		Params: struct {
 			Level  LoggingLevel `json:"level"`
 			Logger string       `json:"logger,omitempty"`

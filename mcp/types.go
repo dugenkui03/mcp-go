@@ -68,7 +68,13 @@ const (
 	// https://spec.modelcontextprotocol.io/specification/2024-11-05/server/tools/list_changed/
 	MethodNotificationToolsListChanged = "notifications/tools/list_changed"
 
-	MethodNotificationMessage = "notifications/message"
+	// MethodNotificationLoggingMessage notifies when the server is sending a log message to the client.
+	// https://modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging
+	MethodNotificationLoggingMessage = "notifications/message"
+
+	// MethodNotificationCancelled notifies when the server or client is cancelling a request.
+	// https://modelcontextprotocol.io/specification/2025-03-26/basic/utilities/cancellation#cancellation
+	MethodNotificationCancelled = "notifications/cancelled"
 )
 
 type URITemplate struct {
@@ -154,11 +160,6 @@ type Request struct {
 }
 
 type Params map[string]any
-
-type Notification struct {
-	Method string             `json:"method"`
-	Params NotificationParams `json:"params,omitempty"`
-}
 
 type NotificationParams struct {
 	// This parameter name is reserved by MCP to allow clients and
@@ -310,11 +311,11 @@ type JSONRPCRequest struct {
 
 // JSONRPCNotification represents a notification which does not expect a response.
 type JSONRPCNotification struct {
-	JSONRPC string `json:"jsonrpc"`
-	Notification
-	LoggingMessageNotification
-	CancelledNotification
-	ProgressNotification
+	JSONRPC                          string                           `json:"jsonrpc"`
+	Method                           string                           `json:"method"`
+	NotificationParams               NotificationParams               `json:",inline,omitempty"`
+	LoggingMessageNotificationParams LoggingMessageNotificationParams `json:",inline,omitempty"`
+	CancelledNotificationParams      CancelledNotificationParams      `json:",inline,omitempty"`
 }
 
 // JSONRPCResponse represents a successful (non-error) response to a request.
@@ -361,7 +362,7 @@ type EmptyResult Result
 
 /* Cancellation */
 
-// CancelledNotification can be sent by either side to indicate that it is
+// CancelledNotificationParams can be sent by either side to indicate that it is
 // cancelling a previously-issued request.
 //
 // The request SHOULD still be in-flight, but due to communication latency, it
@@ -372,8 +373,7 @@ type EmptyResult Result
 // associated processing SHOULD cease.
 //
 // A client MUST NOT attempt to cancel its `initialize` request.
-type CancelledNotification struct {
-	Notification
+type CancelledNotificationParams struct {
 	Params struct {
 		// The ID of the request to cancel.
 		//
@@ -423,7 +423,6 @@ type InitializeResult struct {
 // InitializedNotification is sent from the client to the server after
 // initialization has finished.
 type InitializedNotification struct {
-	Notification
 }
 
 // ClientCapabilities represents capabilities a client may support. Known
@@ -486,10 +485,9 @@ type PingRequest struct {
 
 /* Progress notifications */
 
-// ProgressNotification is an out-of-band notification used to inform the
+// ProgressNotificationParams is an out-of-band notification used to inform the
 // receiver of a progress update for a long-running request.
-type ProgressNotification struct {
-	Notification
+type ProgressNotificationParams struct {
 	Params struct {
 		// The progress token which was given in the initial request, used to
 		// associate this notification with the request that is proceeding.
@@ -577,7 +575,6 @@ type ReadResourceResult struct {
 // changed. This may be issued by servers without any previous subscription from
 // the client.
 type ResourceListChangedNotification struct {
-	Notification
 }
 
 // SubscribeRequest is sent from the client to request resources/updated
@@ -606,7 +603,6 @@ type UnsubscribeRequest struct {
 // informing it that a resource has changed and may need to be read again. This
 // should only be sent if the client previously sent a resources/subscribe request.
 type ResourceUpdatedNotification struct {
-	Notification
 	Params struct {
 		// The URI of the resource that has been updated. This might be a sub-
 		// resource of the one that the client actually subscribed to.
@@ -706,11 +702,10 @@ type SetLevelRequest struct {
 	} `json:"params"`
 }
 
-// LoggingMessageNotification is a notification of a log message passed from
+// LoggingMessageNotificationParams is a notification of a log message passed from
 // server to client. If no logging/setLevel request has been sent from the client,
 // the server MAY decide which messages to send automatically.
-type LoggingMessageNotification struct {
-	Notification
+type LoggingMessageNotificationParams struct {
 	Params struct {
 		// The severity of this log message.
 		Level LoggingLevel `json:"level"`
@@ -985,14 +980,6 @@ type Root struct {
 	// identifier for the root, which may be useful for display purposes or for
 	// referencing the root in other parts of the application.
 	Name string `json:"name,omitempty"`
-}
-
-// RootsListChangedNotification is a notification from the client to the
-// server, informing it that the list of roots has changed.
-// This notification should be sent whenever the client adds, removes, or modifies any root.
-// The server should then request an updated list of roots using the ListRootsRequest.
-type RootsListChangedNotification struct {
-	Notification
 }
 
 // ClientRequest represents any request that can be sent from client to server.

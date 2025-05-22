@@ -107,7 +107,7 @@ func (s *sseSession) GetLogger() mcp.Logger {
 //		return
 //	}
 //
-//	_ = logger.server.SendNotificationToClient(ctx, mcp.MethodNotificationMessage, map[string]any{
+//	_ = logger.server.SendNotificationToClient(ctx, mcp.MethodNotificationLoggingMessage, map[string]any{
 //		"level":   level,
 //		"logger":  fmt.Sprintf("mcp-server-%s-logger", logger.server.name),
 //		"message": message,

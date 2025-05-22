@@ -86,13 +86,6 @@ type PromptMessage struct {
 	Content Content `json:"content"` // Can be TextContent, ImageContent, AudioContent or EmbeddedResource
 }
 
-// PromptListChangedNotification is an optional notification from the server
-// to the client, informing it that the list of prompts it offers has changed. This
-// may be issued by servers without any previous subscription from the client.
-type PromptListChangedNotification struct {
-	Notification
-}
-
 // PromptOption is a function that configures a Prompt.
 // It provides a flexible way to set various properties of a Prompt using the functional options pattern.
 type PromptOption func(*Prompt)

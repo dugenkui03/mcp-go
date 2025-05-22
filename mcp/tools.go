@@ -459,13 +459,6 @@ func (r CallToolRequest) RequireBoolSlice(key string) ([]bool, error) {
 	return nil, fmt.Errorf("required argument %q not found", key)
 }
 
-// ToolListChangedNotification is an optional notification from the server to
-// the client, informing it that the list of tools it offers has changed. This may
-// be issued by servers without any previous subscription from the client.
-type ToolListChangedNotification struct {
-	Notification
-}
-
 // Tool represents the definition for a tool the client can call.
 type Tool struct {
 	// The name of the tool.

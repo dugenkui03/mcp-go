@@ -88,19 +88,25 @@ func (s *MCPServer) SendNotificationToAllClients(
 ) {
 	var notification mcp.JSONRPCNotification
 	switch method {
-	case mcp.MethodNotificationMessage:
+	case mcp.MethodNotificationLoggingMessage:
 		notification = mcp.JSONRPCNotification{
-			JSONRPC:                    mcp.JSONRPC_VERSION,
-			LoggingMessageNotification: mcp.NewLoggingMessageNotification(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
+			JSONRPC:                          mcp.JSONRPC_VERSION,
+			LoggingMessageNotificationParams: mcp.NewLoggingMessageNotificationParams(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
+		}
+	case mcp.MethodNotificationCancelled:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC: mcp.JSONRPC_VERSION,
+			Method:  method,
+			CancelledNotificationParams: mcp.CancelledNotificationParams{
+				AdditionalFields: params,
+			},
 		}
 	default:
 		notification = mcp.JSONRPCNotification{
 			JSONRPC: mcp.JSONRPC_VERSION,
-			Notification: mcp.Notification{
-				Method: method,
-				Params: mcp.NotificationParams{
-					AdditionalFields: params,
-				},
+			Method:  method,
+			NotificationParams: mcp.NotificationParams{
+				AdditionalFields: params,
 			},
 		}
 	}
@@ -142,25 +148,11 @@ func (s *MCPServer) SendNotificationToClient(
 		return ErrNotificationNotInitialized
 	}
 
-	var notification mcp.JSONRPCNotification
-	switch method {
-	case mcp.MethodNotificationMessage:
-		notification = mcp.JSONRPCNotification{
-			JSONRPC:                    mcp.JSONRPC_VERSION,
-			LoggingMessageNotification: mcp.NewLoggingMessageNotification(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
-		}
-	default:
-		notification = mcp.JSONRPCNotification{
-			JSONRPC: mcp.JSONRPC_VERSION,
-			Notification: mcp.Notification{
-				Method: method,
-				Params: mcp.NotificationParams{
-					AdditionalFields: params,
-				},
-			},
-		}
+	notification := mcp.JSONRPCNotification{
+		JSONRPC: mcp.JSONRPC_VERSION,
+		Method:  method,
+		Params:  params,
 	}
-
 	select {
 	case session.NotificationChannel() <- notification:
 		return nil
@@ -198,25 +190,11 @@ func (s *MCPServer) SendNotificationToSpecificClient(
 		return ErrSessionNotInitialized
 	}
 
-	var notification mcp.JSONRPCNotification
-	switch method {
-	case mcp.MethodNotificationMessage:
-		notification = mcp.JSONRPCNotification{
-			JSONRPC:                    mcp.JSONRPC_VERSION,
-			LoggingMessageNotification: mcp.NewLoggingMessageNotification(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
-		}
-	default:
-		notification = mcp.JSONRPCNotification{
-			JSONRPC: mcp.JSONRPC_VERSION,
-			Notification: mcp.Notification{
-				Method: method,
-				Params: mcp.NotificationParams{
-					AdditionalFields: params,
-				},
-			},
-		}
+	notification := mcp.JSONRPCNotification{
+		JSONRPC: mcp.JSONRPC_VERSION,
+		Method:  method,
+		Params:  params,
 	}
-
 	select {
 	case session.NotificationChannel() <- notification:
 		return nil
