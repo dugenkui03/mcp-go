@@ -139,7 +139,7 @@ func (f *sessionTestClientWithLogging) GetLogLevel() mcp.LoggingLevel {
 }
 
 func (f *sessionTestClientWithLogging) GetLogger() mcp.Logger {
-	return nil
+	return &serverLog{}
 }
 
 // Verify that all implementations satisfy their respective interfaces
@@ -860,7 +860,7 @@ func TestMCPServer_SessionToolCapabilitiesBehavior(t *testing.T) {
 		validateServer func(t *testing.T, s *MCPServer, session *sessionTestClientWithTools)
 	}{
 		{
-			name:          "no tool capabilities provided",
+			name: "no tool capabilities provided",
 			serverOptions: []ServerOption{
 				// No WithToolCapabilities
 			},

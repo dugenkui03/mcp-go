@@ -587,7 +587,7 @@ func (s *MCPServer) handleSetLevel(
 		return nil, &requestError{
 			id:   id,
 			code: mcp.INVALID_PARAMS,
-			err:  fmt.Errorf("invalid logging level '%s'", level),
+			err:  fmt.Errorf("invalid logging level '%d'", level),
 		}
 	}
 
