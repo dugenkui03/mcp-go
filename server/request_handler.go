@@ -90,7 +90,7 @@ func (s *MCPServer) HandleMessage(
 			return err.ToJSONRPCError()
 		}
 		s.hooks.afterInitialize(ctx, baseMessage.ID, &request, result)
-		return createResponse(baseMessage.ID, *result)
+		return createResponse(baseMessage.ID, *result) // todo
 	case mcp.MethodPing:
 		var request mcp.PingRequest
 		var result *mcp.EmptyResult

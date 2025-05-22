@@ -254,6 +254,7 @@ func (s *StreamableHTTPServer) handlePost(w http.ResponseWriter, r *http.Request
 	go func() {
 		for {
 			select {
+			// todo
 			case nt := <-session.notificationChannel:
 				func() {
 					mu.Lock()
@@ -365,6 +366,7 @@ func (s *StreamableHTTPServer) handleGet(w http.ResponseWriter, r *http.Request)
 	go func() {
 		for {
 			select {
+			// todo
 			case nt := <-session.notificationChannel:
 				writeChan <- &nt
 			case <-done:
