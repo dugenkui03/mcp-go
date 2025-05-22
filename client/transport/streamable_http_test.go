@@ -265,7 +265,7 @@ func TestStreamableHTTP(t *testing.T) {
 			select {
 			case notification := <-notificationChan:
 				// We received a notification
-				got := notification.Params.AdditionalFields
+				got := notification.Notification.Params.AdditionalFields
 				if got == nil {
 					t.Errorf("Notification handler did not send the expected notification: got nil")
 				}

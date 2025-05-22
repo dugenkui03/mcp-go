@@ -1016,3 +1016,7 @@ type ServerResult any
 type Named interface {
 	GetName() string
 }
+
+type RequestSession struct {
+	Logger Logger
+}

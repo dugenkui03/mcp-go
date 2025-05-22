@@ -39,7 +39,7 @@ func TestRaceConditions(t *testing.T) {
 		srv.AddPrompt(mcp.Prompt{
 			Name:        name,
 			Description: "Test prompt",
-		}, func(ctx context.Context, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		}, func(ctx context.Context, session mcp.RequestSession, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 			return &mcp.GetPromptResult{}, nil
 		})
 	})
@@ -49,7 +49,7 @@ func TestRaceConditions(t *testing.T) {
 		srv.AddTool(mcp.Tool{
 			Name:        name,
 			Description: "Test tool",
-		}, func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		}, func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return &mcp.CallToolResult{}, nil
 		})
 	})
@@ -60,7 +60,7 @@ func TestRaceConditions(t *testing.T) {
 		srv.AddTool(mcp.Tool{
 			Name:        name,
 			Description: "Temporary tool",
-		}, func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		}, func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return &mcp.CallToolResult{}, nil
 		})
 		srv.DeleteTools(name)
@@ -68,7 +68,7 @@ func TestRaceConditions(t *testing.T) {
 
 	runConcurrentOperation(&wg, testDuration, "add-middleware", func() {
 		middleware := func(next ToolHandlerFunc) ToolHandlerFunc {
-			return func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 				return next(ctx, session, request)
 			}
 		}
@@ -91,7 +91,7 @@ func TestRaceConditions(t *testing.T) {
 	srv.AddTool(mcp.Tool{
 		Name:        "persistent-tool",
 		Description: "Test tool that always exists",
-	}, func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	}, func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return &mcp.CallToolResult{}, nil
 	})
 
@@ -110,7 +110,7 @@ func TestRaceConditions(t *testing.T) {
 			URI:         uri,
 			Name:        uri,
 			Description: "Test resource",
-		}, func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		}, func(ctx context.Context, requestSession mcp.RequestSession, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 			return []mcp.ResourceContents{
 				mcp.TextResourceContents{
 					URI:  uri,
@@ -158,12 +158,12 @@ func TestConcurrentPromptAdd(t *testing.T) {
 	srv.AddPrompt(mcp.Prompt{
 		Name:        "initial-prompt",
 		Description: "Initial prompt",
-	}, func(ctx context.Context, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+	}, func(ctx context.Context, session mcp.RequestSession, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 		go func() {
 			srv.AddPrompt(mcp.Prompt{
 				Name:        fmt.Sprintf("new-prompt-%d", time.Now().UnixNano()),
 				Description: "Added from handler",
-			}, func(ctx context.Context, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+			}, func(ctx context.Context, session mcp.RequestSession, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 				return &mcp.GetPromptResult{}, nil
 			})
 		}()

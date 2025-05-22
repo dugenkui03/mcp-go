@@ -25,6 +25,10 @@ func (logger *serverLog) GetLogLevel() mcp.LoggingLevel {
 }
 
 func (logger *serverLog) Log(ctx context.Context, level mcp.LoggingLevel, message string) {
+	if logger == nil {
+		return
+	}
+
 	// only send log if the log level is high enough
 	if logger.loggingLevel.Load().(mcp.LoggingLevel) < level {
 		return

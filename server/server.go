@@ -28,16 +28,16 @@ type resourceTemplateEntry struct {
 type ServerOption func(*MCPServer)
 
 // ResourceHandlerFunc is a function that returns resource contents.
-type ResourceHandlerFunc func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error)
+type ResourceHandlerFunc func(ctx context.Context, session mcp.RequestSession, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error)
 
 // ResourceTemplateHandlerFunc is a function that returns a resource template.
-type ResourceTemplateHandlerFunc func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error)
+type ResourceTemplateHandlerFunc func(ctx context.Context, session mcp.RequestSession, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error)
 
 // PromptHandlerFunc handles prompt requests with given arguments.
-type PromptHandlerFunc func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error)
+type PromptHandlerFunc func(ctx context.Context, session mcp.RequestSession, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error)
 
 // ToolHandlerFunc handles tool calls with given arguments.
-type ToolHandlerFunc func(ctx context.Context, session SessionWithLogging, request mcp.CallToolRequest) (*mcp.CallToolResult, error)
+type ToolHandlerFunc func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error)
 
 // ToolHandlerMiddleware is a middleware function that wraps a ToolHandlerFunc.
 type ToolHandlerMiddleware func(ToolHandlerFunc) ToolHandlerFunc
@@ -217,7 +217,7 @@ func WithToolFilter(
 // WithRecovery adds a middleware that recovers from panics in tool handlers.
 func WithRecovery() ServerOption {
 	return WithToolHandlerMiddleware(func(next ToolHandlerFunc) ToolHandlerFunc {
-		return func(ctx context.Context, request mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
+		return func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
 			defer func() {
 				if r := recover(); r != nil {
 					err = fmt.Errorf(
@@ -227,7 +227,7 @@ func WithRecovery() ServerOption {
 					)
 				}
 			}()
-			return next(ctx, request)
+			return next(ctx, requestSession, request)
 		}
 	})
 }
@@ -711,12 +711,17 @@ func (s *MCPServer) handleReadResource(
 	id any,
 	request mcp.ReadResourceRequest,
 ) (*mcp.ReadResourceResult, *requestError) {
+	sessionWithLog := ClientSessionFromContext(ctx).(SessionWithLogging)
+	requestSession := mcp.RequestSession{
+		Logger: sessionWithLog.GetLogger(),
+	}
+
 	s.resourcesMu.RLock()
 	// First try direct resource handlers
 	if entry, ok := s.resources[request.Params.URI]; ok {
 		handler := entry.handler
 		s.resourcesMu.RUnlock()
-		contents, err := handler(ctx, request)
+		contents, err := handler(ctx, requestSession, request)
 		if err != nil {
 			return nil, &requestError{
 				id:   id,
@@ -747,7 +752,11 @@ func (s *MCPServer) handleReadResource(
 	s.resourcesMu.RUnlock()
 
 	if matched {
-		contents, err := matchedHandler(ctx, request)
+		sessionWithLog := ClientSessionFromContext(ctx).(SessionWithLogging)
+		requestSession := mcp.RequestSession{
+			Logger: sessionWithLog.GetLogger(),
+		}
+		contents, err := matchedHandler(ctx, requestSession, request)
 		if err != nil {
 			return nil, &requestError{
 				id:   id,
@@ -829,7 +838,11 @@ func (s *MCPServer) handleGetPrompt(
 		}
 	}
 
-	result, err := handler(ctx, request)
+	sessionWithLog := ClientSessionFromContext(ctx).(SessionWithLogging)
+	requestSession := mcp.RequestSession{
+		Logger: sessionWithLog.GetLogger(),
+	}
+	result, err := handler(ctx, requestSession, request)
 	if err != nil {
 		return nil, &requestError{
 			id:   id,
@@ -940,6 +953,7 @@ func (s *MCPServer) handleToolCall(
 	var tool ServerTool
 	var ok bool
 
+	requestSession := mcp.RequestSession{}
 	session := ClientSessionFromContext(ctx)
 	if session != nil {
 		if sessionWithTools, typeAssertOk := session.(SessionWithTools); typeAssertOk {
@@ -950,6 +964,9 @@ func (s *MCPServer) handleToolCall(
 					ok = true
 				}
 			}
+		}
+		if sessionWithLogging, typeAssertOk := session.(SessionWithLogging); typeAssertOk {
+			requestSession.Logger = sessionWithLogging.GetLogger()
 		}
 	}
 
@@ -979,7 +996,7 @@ func (s *MCPServer) handleToolCall(
 		finalHandler = mw[i](finalHandler)
 	}
 
-	result, err := finalHandler(ctx, session, request)
+	result, err := finalHandler(ctx, requestSession, request)
 	if err != nil {
 		return nil, &requestError{
 			id:   id,

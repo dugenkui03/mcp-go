@@ -160,12 +160,12 @@ func TestMCPServer_Tools(t *testing.T) {
 			action: func(t *testing.T, server *MCPServer, notificationChannel chan mcp.JSONRPCNotification) {
 				server.SetTools(ServerTool{
 					Tool: mcp.NewTool("test-tool-1"),
-					Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					Handler: func(ctx context.Context, requestSession RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				}, ServerTool{
 					Tool: mcp.NewTool("test-tool-2"),
-					Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					Handler: func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				})
@@ -189,12 +189,12 @@ func TestMCPServer_Tools(t *testing.T) {
 				require.NoError(t, err)
 				server.SetTools(ServerTool{
 					Tool: mcp.NewTool("test-tool-1"),
-					Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					Handler: func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				}, ServerTool{
 					Tool: mcp.NewTool("test-tool-2"),
-					Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					Handler: func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				})
@@ -230,12 +230,12 @@ func TestMCPServer_Tools(t *testing.T) {
 				}
 				server.SetTools(ServerTool{
 					Tool: mcp.NewTool("test-tool-1"),
-					Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					Handler: func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				}, ServerTool{
 					Tool: mcp.NewTool("test-tool-2"),
-					Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					Handler: func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				})
@@ -262,13 +262,13 @@ func TestMCPServer_Tools(t *testing.T) {
 				require.NoError(t, err)
 				server.AddTool(
 					mcp.NewTool("test-tool-1"),
-					func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				)
 				server.AddTool(
 					mcp.NewTool("test-tool-2"),
-					func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				)
@@ -645,7 +645,7 @@ func TestMCPServer_SendNotificationToAllClients(t *testing.T) {
 					// Verify notification method
 					assert.Equal(t, "method", notification.Method)
 					// Verify count parameter
-					count, ok := notification.Params.AdditionalFields["count"]
+					count, ok := notification.Notification.Params.AdditionalFields["count"]
 					assert.True(t, ok, "count parameter not found")
 					assert.Equal(
 						t,
@@ -706,7 +706,7 @@ func TestMCPServer_PromptHandling(t *testing.T) {
 
 	server.AddPrompt(
 		testPrompt,
-		func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		func(ctx context.Context, requestSession mcp.RequestSession, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 			return &mcp.GetPromptResult{
 				Messages: []mcp.PromptMessage{
 					{
@@ -933,7 +933,7 @@ func TestMCPServer_HandleUndefinedHandlers(t *testing.T) {
 			IdempotentHint:  mcp.ToBoolPtr(false),
 			OpenWorldHint:   mcp.ToBoolPtr(false),
 		},
-	}, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	}, func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return &mcp.CallToolResult{}, nil
 	})
 
@@ -1195,7 +1195,7 @@ func TestMCPServer_ResourceTemplates(t *testing.T) {
 			"test://{a}/test-resource{/b*}",
 			"My Resource",
 		),
-		func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		func(ctx context.Context, requestSession mcp.RequestSession, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 			a := request.Params.Arguments["a"].([]string)
 			b := request.Params.Arguments["b"].([]string)
 			// Validate that the template arguments are passed correctly to the handler
@@ -1282,7 +1282,7 @@ func createTestServer() *MCPServer {
 			URI:  "resource://testresource",
 			Name: "My Resource",
 		},
-		func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		func(ctx context.Context, requestSession mcp.RequestSession, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 			return []mcp.ResourceContents{
 				mcp.TextResourceContents{
 					URI:      "resource://testresource",
@@ -1298,7 +1298,7 @@ func createTestServer() *MCPServer {
 			Name:        "test-tool",
 			Description: "Test tool",
 		},
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{
 					mcp.TextContent{
@@ -1434,7 +1434,7 @@ func TestMCPServer_WithHooks(t *testing.T) {
 	// Add a test tool
 	server.AddTool(
 		mcp.NewTool("test-tool"),
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return &mcp.CallToolResult{}, nil
 		},
 	)
@@ -1605,7 +1605,7 @@ func TestMCPServer_SessionHooks_NilHooks(t *testing.T) {
 }
 
 func TestMCPServer_WithRecover(t *testing.T) {
-	panicToolHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	panicToolHandler := func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		panic("test panic")
 	}
 

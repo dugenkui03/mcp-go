@@ -182,7 +182,7 @@ func TestStdio(t *testing.T) {
 			select {
 			case nt := <-notificationChan:
 				// We received a notification
-				responseJson, _ := json.Marshal(nt.Params.AdditionalFields)
+				responseJson, _ := json.Marshal(nt.Notification.Params.AdditionalFields)
 				requestJson, _ := json.Marshal(notification)
 				if string(responseJson) != string(requestJson) {
 					t.Errorf("Notification handler did not send the expected notification: \ngot %s\nexpect %s", responseJson, requestJson)

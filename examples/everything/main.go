@@ -191,6 +191,7 @@ func generateResources() []mcp.Resource {
 
 func handleReadResource(
 	ctx context.Context,
+	requestSession mcp.RequestSession,
 	request mcp.ReadResourceRequest,
 ) ([]mcp.ResourceContents, error) {
 	return []mcp.ResourceContents{
@@ -203,8 +204,7 @@ func handleReadResource(
 }
 
 func handleResourceTemplate(
-	ctx context.Context,
-	request mcp.ReadResourceRequest,
+	ctx context.Context, requestSession mcp.RequestSession, request mcp.ReadResourceRequest,
 ) ([]mcp.ResourceContents, error) {
 	return []mcp.ResourceContents{
 		mcp.TextResourceContents{
@@ -217,6 +217,7 @@ func handleResourceTemplate(
 
 func handleGeneratedResource(
 	ctx context.Context,
+	requestSession mcp.RequestSession,
 	request mcp.ReadResourceRequest,
 ) ([]mcp.ResourceContents, error) {
 	uri := request.Params.URI
@@ -254,6 +255,7 @@ func handleGeneratedResource(
 
 func handleSimplePrompt(
 	ctx context.Context,
+	requestSession mcp.RequestSession,
 	request mcp.GetPromptRequest,
 ) (*mcp.GetPromptResult, error) {
 	return &mcp.GetPromptResult{
@@ -272,6 +274,7 @@ func handleSimplePrompt(
 
 func handleComplexPrompt(
 	ctx context.Context,
+	requestSession mcp.RequestSession,
 	request mcp.GetPromptRequest,
 ) (*mcp.GetPromptResult, error) {
 	arguments := request.Params.Arguments
@@ -309,7 +312,7 @@ func handleComplexPrompt(
 }
 
 func handleEchoTool(
-	ctx context.Context, session server.SessionWithLogging, request mcp.CallToolRequest,
+	ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest,
 ) (*mcp.CallToolResult, error) {
 	arguments := request.GetArguments()
 	message, ok := arguments["message"].(string)
@@ -327,7 +330,7 @@ func handleEchoTool(
 }
 
 func handleAddTool(
-	ctx context.Context, session server.SessionWithLogging, request mcp.CallToolRequest,
+	ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest,
 ) (*mcp.CallToolResult, error) {
 	arguments := request.GetArguments()
 	a, ok1 := arguments["a"].(float64)
@@ -347,7 +350,7 @@ func handleAddTool(
 }
 
 func handleSendNotification(
-	ctx context.Context, session server.SessionWithLogging, request mcp.CallToolRequest,
+	ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest,
 ) (*mcp.CallToolResult, error) {
 
 	server := server.ServerFromContext(ctx)
@@ -376,7 +379,7 @@ func handleSendNotification(
 }
 
 func handleLongRunningOperationTool(
-	ctx context.Context, session server.SessionWithLogging, request mcp.CallToolRequest,
+	ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest,
 ) (*mcp.CallToolResult, error) {
 	arguments := request.GetArguments()
 	progressToken := request.Params.Meta.ProgressToken
@@ -440,7 +443,7 @@ func handleLongRunningOperationTool(
 // }
 
 func handleGetTinyImageTool(
-	ctx context.Context, session server.SessionWithLogging, request mcp.CallToolRequest,
+	ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest,
 ) (*mcp.CallToolResult, error) {
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{

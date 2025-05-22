@@ -35,7 +35,7 @@ func TestTypedToolHandler(t *testing.T) {
 	}
 
 	// Call the wrapped handler
-	result, err := wrappedHandler(context.Background(), req)
+	result, err := wrappedHandler(context.Background(), RequestSession{}, req)
 
 	// Verify results
 	assert.NoError(t, err)
@@ -50,7 +50,7 @@ func TestTypedToolHandler(t *testing.T) {
 	}
 
 	// This should still work because of type conversion
-	result, err = wrappedHandler(context.Background(), req)
+	result, err = wrappedHandler(context.Background(), RequestSession{}, req)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -62,14 +62,14 @@ func TestTypedToolHandler(t *testing.T) {
 	}
 
 	// This should still work but name will be empty
-	result, err = wrappedHandler(context.Background(), req)
+	result, err = wrappedHandler(context.Background(), RequestSession{}, req)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "", result.Content[0].(TextContent).Text)
 
 	// Test with completely invalid arguments
 	req.Params.Arguments = "not a map"
-	result, err = wrappedHandler(context.Background(), req)
+	result, err = wrappedHandler(context.Background(), RequestSession{}, req)
 	assert.NoError(t, err) // Error is wrapped in the result
 	assert.NotNil(t, result)
 	assert.True(t, result.IsError)
@@ -123,7 +123,7 @@ func TestTypedToolHandlerWithValidation(t *testing.T) {
 	}
 
 	// Call the wrapped handler
-	result, err := wrappedHandler(context.Background(), req)
+	result, err := wrappedHandler(context.Background(), RequestSession{}, req)
 
 	// Verify results
 	assert.NoError(t, err)
@@ -137,7 +137,7 @@ func TestTypedToolHandlerWithValidation(t *testing.T) {
 		"y":         0.0,
 	}
 
-	result, err = wrappedHandler(context.Background(), req)
+	result, err = wrappedHandler(context.Background(), RequestSession{}, req)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.True(t, result.IsError)
@@ -160,13 +160,13 @@ func TestTypedToolHandlerWithComplexObjects(t *testing.T) {
 	}
 
 	type UserProfile struct {
-		Name        string         `json:"name"`
-		Email       string         `json:"email"`
-		Age         int            `json:"age"`
-		IsVerified  bool           `json:"is_verified"`
-		Address     Address        `json:"address"`
+		Name        string          `json:"name"`
+		Email       string          `json:"email"`
+		Age         int             `json:"age"`
+		IsVerified  bool            `json:"is_verified"`
+		Address     Address         `json:"address"`
 		Preferences UserPreferences `json:"preferences"`
-		Tags        []string       `json:"tags"`
+		Tags        []string        `json:"tags"`
 	}
 
 	// Create a typed handler function
@@ -181,35 +181,35 @@ func TestTypedToolHandlerWithComplexObjects(t *testing.T) {
 
 		// Build a response that includes nested object data
 		response := fmt.Sprintf("User: %s (%s)", profile.Name, profile.Email)
-		
+
 		if profile.Age > 0 {
 			response += fmt.Sprintf(", Age: %d", profile.Age)
 		}
-		
+
 		if profile.IsVerified {
 			response += ", Verified: Yes"
 		} else {
 			response += ", Verified: No"
 		}
-		
+
 		// Include address information if available
 		if profile.Address.City != "" && profile.Address.Country != "" {
 			response += fmt.Sprintf(", Location: %s, %s", profile.Address.City, profile.Address.Country)
 		}
-		
+
 		// Include preferences if available
 		if profile.Preferences.Theme != "" {
 			response += fmt.Sprintf(", Theme: %s", profile.Preferences.Theme)
 		}
-		
+
 		if len(profile.Preferences.Newsletters) > 0 {
 			response += fmt.Sprintf(", Subscribed to %d newsletters", len(profile.Preferences.Newsletters))
 		}
-		
+
 		if len(profile.Tags) > 0 {
 			response += fmt.Sprintf(", Tags: %v", profile.Tags)
 		}
-		
+
 		return NewToolResultText(response), nil
 	}
 
@@ -239,7 +239,7 @@ func TestTypedToolHandlerWithComplexObjects(t *testing.T) {
 	}
 
 	// Call the wrapped handler
-	result, err := wrappedHandler(context.Background(), req)
+	result, err := wrappedHandler(context.Background(), RequestSession{}, req)
 
 	// Verify results
 	assert.NoError(t, err)
@@ -265,7 +265,7 @@ func TestTypedToolHandlerWithComplexObjects(t *testing.T) {
 		},
 	}
 
-	result, err = wrappedHandler(context.Background(), req)
+	result, err = wrappedHandler(context.Background(), RequestSession{}, req)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, result.Content[0].(TextContent).Text, "Jane Smith")
@@ -294,7 +294,7 @@ func TestTypedToolHandlerWithComplexObjects(t *testing.T) {
 	}`
 
 	req.Params.Arguments = json.RawMessage(jsonInput)
-	result, err = wrappedHandler(context.Background(), req)
+	result, err = wrappedHandler(context.Background(), RequestSession{}, req)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, result.Content[0].(TextContent).Text, "Bob Johnson")

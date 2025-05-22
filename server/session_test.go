@@ -99,12 +99,16 @@ func (f *sessionTestClientWithTools) SetSessionTools(tools map[string]ServerTool
 	f.sessionTools = toolsCopy
 }
 
+func (f *sessionTestClientWithTools) GetLogger() mcp.Logger {
+	return nil
+}
+
 // sessionTestClientWithTools implements the SessionWithLogging interface for testing
 type sessionTestClientWithLogging struct {
 	sessionID           string
 	notificationChannel chan mcp.JSONRPCNotification
 	initialized         bool
-	loggingLevel 		atomic.Value
+	loggingLevel        atomic.Value
 }
 
 func (f *sessionTestClientWithLogging) SessionID() string {
@@ -134,11 +138,15 @@ func (f *sessionTestClientWithLogging) GetLogLevel() mcp.LoggingLevel {
 	return level.(mcp.LoggingLevel)
 }
 
+func (f *sessionTestClientWithLogging) GetLogger() mcp.Logger {
+	return nil
+}
+
 // Verify that all implementations satisfy their respective interfaces
 var (
-	_ ClientSession 			= (*sessionTestClient)(nil)
-	_ SessionWithTools 			= (*sessionTestClientWithTools)(nil)
-	_ SessionWithLogging		= (*sessionTestClientWithLogging)(nil)
+	_ ClientSession      = (*sessionTestClient)(nil)
+	_ SessionWithTools   = (*sessionTestClientWithTools)(nil)
+	_ SessionWithLogging = (*sessionTestClientWithLogging)(nil)
 )
 
 func TestSessionWithTools_Integration(t *testing.T) {
@@ -147,7 +155,7 @@ func TestSessionWithTools_Integration(t *testing.T) {
 	// Create session-specific tools
 	sessionTool := ServerTool{
 		Tool: mcp.NewTool("session-tool"),
-		Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		Handler: func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return mcp.NewToolResultText("session-tool result"), nil
 		},
 	}
@@ -195,8 +203,11 @@ func TestSessionWithTools_Integration(t *testing.T) {
 		require.True(t, exists, "Session tool should exist in the map")
 		require.NotNil(t, tool, "Session tool should not be nil")
 
+		requestSession := RequestSession{
+			Logger: session.GetLogger(),
+		}
 		// Now test calling directly with the handler
-		result, err := tool.Handler(sessionCtx, testReq)
+		result, err := tool.Handler(sessionCtx, requestSession, testReq)
 		require.NoError(t, err, "No error calling session tool handler directly")
 		require.NotNil(t, result, "Result should not be nil")
 		require.Len(t, result.Content, 1, "Result should have one content item")
@@ -316,7 +327,7 @@ func TestMCPServer_AddSessionTool(t *testing.T) {
 	err = server.AddSessionTool(
 		session.SessionID(),
 		mcp.NewTool("session-tool-helper"),
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return mcp.NewToolResultText("helper result"), nil
 		},
 	)
@@ -521,7 +532,7 @@ func TestMCPServer_CallSessionTool(t *testing.T) {
 	server := NewMCPServer("test-server", "1.0.0", WithToolCapabilities(true))
 
 	// Add global tool
-	server.AddTool(mcp.NewTool("test_tool"), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	server.AddTool(mcp.NewTool("test_tool"), func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return mcp.NewToolResultText("global result"), nil
 	})
 
@@ -541,7 +552,7 @@ func TestMCPServer_CallSessionTool(t *testing.T) {
 	err = server.AddSessionTool(
 		session.SessionID(),
 		mcp.NewTool("test_tool"),
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return mcp.NewToolResultText("session result"), nil
 		},
 	)
@@ -728,7 +739,7 @@ func TestMCPServer_SendNotificationToSpecificClient(t *testing.T) {
 	select {
 	case notification := <-session1Chan:
 		assert.Equal(t, "test-method", notification.Method)
-		assert.Equal(t, "test-data", notification.Params.AdditionalFields["data"])
+		assert.Equal(t, "test-data", notification.Notification.Params.AdditionalFields["data"])
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Expected notification not received by session 1")
 	}
