@@ -234,6 +234,10 @@ func (s *StreamableHTTPServer) handlePost(w http.ResponseWriter, r *http.Request
 	}
 
 	session := newStreamableHttpSession(sessionID, s.sessionTools)
+	logger := serverLog{}
+	logger.loggingLevel.Store(mcp.LoggingLevelDebug)
+	logger.server = s.server
+	session.logger = logger
 
 	// Set the client context before handling the message
 	ctx := s.server.WithContext(r.Context(), session)
@@ -329,6 +333,10 @@ func (s *StreamableHTTPServer) handleGet(w http.ResponseWriter, r *http.Request)
 	}
 
 	session := newStreamableHttpSession(sessionID, s.sessionTools)
+	logger := serverLog{}
+	logger.loggingLevel.Store(mcp.LoggingLevelDebug)
+	logger.server = s.server
+	session.logger = logger
 	if err := s.server.RegisterSession(r.Context(), session); err != nil {
 		http.Error(w, fmt.Sprintf("Session registration failed: %v", err), http.StatusBadRequest)
 		return
@@ -487,6 +495,7 @@ type streamableHttpSession struct {
 	sessionID           string
 	notificationChannel chan mcp.JSONRPCNotification // server -> client notifications // note 发送消息的通道
 	tools               *sessionToolsStore
+	logger              serverLog
 }
 
 func newStreamableHttpSession(sessionID string, toolStore *sessionToolsStore) *streamableHttpSession {
@@ -523,6 +532,10 @@ func (s *streamableHttpSession) GetSessionTools() map[string]ServerTool {
 
 func (s *streamableHttpSession) SetSessionTools(tools map[string]ServerTool) {
 	s.tools.set(s.sessionID, tools)
+}
+
+func (s *streamableHttpSession) GetLogger() mcp.Logger {
+	return &s.logger
 }
 
 var _ SessionWithTools = (*streamableHttpSession)(nil)

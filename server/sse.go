@@ -27,7 +27,7 @@ type sseSession struct {
 	notificationChannel chan mcp.JSONRPCNotification // note 发送消息的通道
 	initialized         atomic.Bool
 	tools               sync.Map // stores session-specific tools
-	logger              sseLogger
+	logger              serverLog
 }
 
 // SSEContextFunc is a function that takes an existing context and the current
@@ -79,67 +79,72 @@ func (s *sseSession) SetSessionTools(tools map[string]ServerTool) {
 	}
 }
 
-type sseLogger struct {
-	loggingLevel atomic.Value
-	server       *MCPServer
+func (s *sseSession) GetLogger() mcp.Logger {
+	return &s.logger
 }
 
-func (logger *sseLogger) SetLogLevel(level mcp.LoggingLevel) {
-	logger.loggingLevel.Store(level)
-}
-
-func (logger *sseLogger) GetLogLevel() mcp.LoggingLevel {
-	level := logger.loggingLevel.Load()
-	if level == nil {
-		return mcp.LoggingLevelError
-	}
-	return level.(mcp.LoggingLevel)
-}
-
-func (logger *sseLogger) Log(ctx context.Context, level mcp.LoggingLevel, message string) {
-	// only send log if the log level is high enough
-	if logger.loggingLevel.Load().(mcp.LoggingLevel) < level {
-		return
-	}
-
-	_ = logger.server.SendNotificationToClient(ctx, mcp.MethodNotificationMessage, map[string]any{
-		"level":   level,
-		"logger":  fmt.Sprintf("mcp-server-%s-logger", logger.server.name),
-		"message": message,
-	})
-}
-
-func (logger *sseLogger) Debug(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelDebug, message)
-}
-
-func (logger *sseLogger) Info(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelInfo, message)
-}
-
-func (logger *sseLogger) Notice(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelNotice, message)
-}
-
-func (logger *sseLogger) Warning(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelWarning, message)
-}
-
-func (logger *sseLogger) Error(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelError, message)
-}
-
-func (logger *sseLogger) Critical(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelCritical, message)
-}
-
-func (logger *sseLogger) Alert(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelAlert, message)
-}
-
-func (logger *sseLogger) Emergency(ctx context.Context, message string) {
-	logger.Log(ctx, mcp.LoggingLevelEmergency, message)
-}
+//
+//type sseLogger struct {
+//	loggingLevel atomic.Value
+//	server       *MCPServer
+//}
+//
+//func (logger *sseLogger) SetLogLevel(level mcp.LoggingLevel) {
+//	logger.loggingLevel.Store(level)
+//}
+//
+//func (logger *sseLogger) GetLogLevel() mcp.LoggingLevel {
+//	level := logger.loggingLevel.Load()
+//	if level == nil {
+//		return mcp.LoggingLevelError
+//	}
+//	return level.(mcp.LoggingLevel)
+//}
+//
+//func (logger *sseLogger) Log(ctx context.Context, level mcp.LoggingLevel, message string) {
+//	// only send log if the log level is high enough
+//	if logger.loggingLevel.Load().(mcp.LoggingLevel) < level {
+//		return
+//	}
+//
+//	_ = logger.server.SendNotificationToClient(ctx, mcp.MethodNotificationMessage, map[string]any{
+//		"level":   level,
+//		"logger":  fmt.Sprintf("mcp-server-%s-logger", logger.server.name),
+//		"message": message,
+//	})
+//}
+//
+//func (logger *sseLogger) Debug(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelDebug, message)
+//}
+//
+//func (logger *sseLogger) Info(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelInfo, message)
+//}
+//
+//func (logger *sseLogger) Notice(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelNotice, message)
+//}
+//
+//func (logger *sseLogger) Warning(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelWarning, message)
+//}
+//
+//func (logger *sseLogger) Error(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelError, message)
+//}
+//
+//func (logger *sseLogger) Critical(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelCritical, message)
+//}
+//
+//func (logger *sseLogger) Alert(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelAlert, message)
+//}
+//
+//func (logger *sseLogger) Emergency(ctx context.Context, message string) {
+//	logger.Log(ctx, mcp.LoggingLevelEmergency, message)
+//}
 
 var (
 	_ ClientSession    = (*sseSession)(nil)
@@ -377,7 +382,7 @@ func (s *SSEServer) handleSSE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionID := uuid.New().String()
-	logger := sseLogger{}
+	logger := serverLog{}
 	logger.loggingLevel.Store(mcp.LoggingLevelDebug)
 	logger.server = s.server
 	session := &sseSession{

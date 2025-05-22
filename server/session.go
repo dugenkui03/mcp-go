@@ -21,7 +21,7 @@ type ClientSession interface {
 // SessionWithLogging is an extension of ClientSession that can receive log message notifications and set log level
 type SessionWithLogging interface {
 	ClientSession
-	mcp.Logger
+	GetLogger() mcp.Logger
 }
 
 // SessionWithTools is an extension of ClientSession that can store session-specific tool data
