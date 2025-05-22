@@ -75,6 +75,11 @@ const (
 	// MethodNotificationCancelled notifies when the server or client is cancelling a request.
 	// https://modelcontextprotocol.io/specification/2025-03-26/basic/utilities/cancellation#cancellation
 	MethodNotificationCancelled = "notifications/cancelled"
+
+	// MethodNotificationProgress notifies when the server or client is sending a progress notifications
+	// to provide updates about operation status
+	// https://modelcontextprotocol.io/specification/2025-03-26/basic/utilities/progress
+	MethodNotificationProgress = "notifications/progress"
 )
 
 type URITemplate struct {
@@ -311,11 +316,28 @@ type JSONRPCRequest struct {
 
 // JSONRPCNotification represents a notification which does not expect a response.
 type JSONRPCNotification struct {
-	JSONRPC                          string                           `json:"jsonrpc"`
-	Method                           string                           `json:"method"`
-	NotificationParams               NotificationParams               `json:",inline,omitempty"`
-	LoggingMessageNotificationParams LoggingMessageNotificationParams `json:",inline,omitempty"`
-	CancelledNotificationParams      CancelledNotificationParams      `json:",inline,omitempty"`
+	JSONRPC                          string                            `json:"jsonrpc"`
+	Method                           string                            `json:"method"`
+	NotificationParams               *NotificationParams               `json:"-"`
+	LoggingMessageNotificationParams *LoggingMessageNotificationParams `json:"-"`
+	CancelledNotificationParams      *CancelledNotificationParams      `json:"-"`
+	ProgressNotificationParams       *ProgressNotificationParams       `json:"-"`
+}
+
+func (n JSONRPCNotification) MarshalJSON() ([]byte, error) {
+	raw := make(map[string]any)
+	raw["jsonrpc"] = n.JSONRPC
+	raw["method"] = n.Method
+	if n.NotificationParams != nil {
+		raw["params"] = n.NotificationParams
+	} else if n.LoggingMessageNotificationParams != nil {
+		raw["params"] = n.LoggingMessageNotificationParams
+	} else if n.CancelledNotificationParams != nil {
+		raw["params"] = n.CancelledNotificationParams
+	} else if n.ProgressNotificationParams != nil {
+		raw["params"] = n.ProgressNotificationParams
+	}
+	return json.Marshal(raw)
 }
 
 // JSONRPCResponse represents a successful (non-error) response to a request.
@@ -374,17 +396,15 @@ type EmptyResult Result
 //
 // A client MUST NOT attempt to cancel its `initialize` request.
 type CancelledNotificationParams struct {
-	Params struct {
-		// The ID of the request to cancel.
-		//
-		// This MUST correspond to the ID of a request previously issued
-		// in the same direction.
-		RequestId RequestId `json:"requestId"`
+	// The ID of the request to cancel.
+	//
+	// This MUST correspond to the ID of a request previously issued
+	// in the same direction.
+	RequestId RequestId `json:"requestId"`
 
-		// An optional string describing the reason for the cancellation. This MAY
-		// be logged or presented to the user.
-		Reason string `json:"reason,omitempty"`
-	} `json:"params"`
+	// An optional string describing the reason for the cancellation. This MAY
+	// be logged or presented to the user.
+	Reason string `json:"reason,omitempty"`
 }
 
 /* Initialization */
@@ -488,19 +508,17 @@ type PingRequest struct {
 // ProgressNotificationParams is an out-of-band notification used to inform the
 // receiver of a progress update for a long-running request.
 type ProgressNotificationParams struct {
-	Params struct {
-		// The progress token which was given in the initial request, used to
-		// associate this notification with the request that is proceeding.
-		ProgressToken ProgressToken `json:"progressToken"`
-		// The progress thus far. This should increase every time progress is made,
-		// even if the total is unknown.
-		Progress float64 `json:"progress"`
-		// Total number of items to process (or total progress required), if known.
-		Total float64 `json:"total,omitempty"`
-		// Message related to progress. This should provide relevant human-readable
-		// progress information.
-		Message string `json:"message,omitempty"`
-	} `json:"params"`
+	// The progress token which was given in the initial request, used to
+	// associate this notification with the request that is proceeding.
+	ProgressToken ProgressToken `json:"progressToken"`
+	// The progress thus far. This should increase every time progress is made,
+	// even if the total is unknown.
+	Progress float64 `json:"progress"`
+	// Total number of items to process (or total progress required), if known.
+	Total float64 `json:"total,omitempty"`
+	// Message related to progress. This should provide relevant human-readable
+	// progress information.
+	Message string `json:"message,omitempty"`
 }
 
 /* Pagination */
@@ -706,15 +724,13 @@ type SetLevelRequest struct {
 // server to client. If no logging/setLevel request has been sent from the client,
 // the server MAY decide which messages to send automatically.
 type LoggingMessageNotificationParams struct {
-	Params struct {
-		// The severity of this log message.
-		Level LoggingLevel `json:"level"`
-		// An optional name of the logger issuing this message.
-		Logger string `json:"logger,omitempty"`
-		// The data to be logged, such as a string message or an object. Any JSON
-		// serializable type is allowed here.
-		Data any `json:"data"`
-	} `json:"params"`
+	// The severity of this log message.
+	Level LoggingLevel `json:"level"`
+	// An optional name of the logger issuing this message.
+	Logger string `json:"logger,omitempty"`
+	// The data to be logged, such as a string message or an object. Any JSON
+	// serializable type is allowed here.
+	Data any `json:"data"`
 }
 
 // LoggingLevel represents the severity of a log message.

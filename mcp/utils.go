@@ -133,27 +133,27 @@ func NewJSONRPCError(
 func NewProgressNotification(
 	token ProgressToken,
 	progress float64,
-	total *float64,
-	message *string,
-) ProgressNotificationParams {
-	notification := ProgressNotificationParams{
-		Params: struct {
-			ProgressToken ProgressToken `json:"progressToken"`
-			Progress      float64       `json:"progress"`
-			Total         float64       `json:"total,omitempty"`
-			Message       string        `json:"message,omitempty"`
-		}{
-			ProgressToken: token,
-			Progress:      progress,
-		},
+	total float64,
+	message string,
+) *ProgressNotificationParams {
+	return &ProgressNotificationParams{
+		ProgressToken: token,
+		Progress:      progress,
+		Total:         total,
+		Message:       message,
 	}
-	if total != nil {
-		notification.Params.Total = *total
+}
+
+// NewCancelledNotificationParams
+// Helper function for creating a cancelled notification
+func NewCancelledNotificationParams(
+	requestID RequestId,
+	reason string,
+) *CancelledNotificationParams {
+	return &CancelledNotificationParams{
+		RequestId: requestID,
+		Reason:    reason,
 	}
-	if message != nil {
-		notification.Params.Message = *message
-	}
-	return notification
 }
 
 // NewLoggingMessageNotificationParams
@@ -162,17 +162,11 @@ func NewLoggingMessageNotificationParams(
 	level LoggingLevel,
 	logger string,
 	data any,
-) LoggingMessageNotificationParams {
-	return LoggingMessageNotificationParams{
-		Params: struct {
-			Level  LoggingLevel `json:"level"`
-			Logger string       `json:"logger,omitempty"`
-			Data   any          `json:"data"`
-		}{
-			Level:  level,
-			Logger: logger,
-			Data:   data,
-		},
+) *LoggingMessageNotificationParams {
+	return &LoggingMessageNotificationParams{
+		Level:  level,
+		Logger: logger,
+		Data:   data,
 	}
 }
 

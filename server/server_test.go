@@ -645,7 +645,7 @@ func TestMCPServer_SendNotificationToAllClients(t *testing.T) {
 					// Verify notification method
 					assert.Equal(t, "method", notification.Method)
 					// Verify count parameter
-					count, ok := notification.Notification.Params.AdditionalFields["count"]
+					count, ok := notification.NotificationParams.AdditionalFields["count"]
 					assert.True(t, ok, "count parameter not found")
 					assert.Equal(
 						t,

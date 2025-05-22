@@ -205,11 +205,9 @@ func TestStreamableHTTP_POST_SendAndReceive(t *testing.T) {
 		// send notification
 		notification := mcp.JSONRPCNotification{
 			JSONRPC: "2.0",
-			Notification: mcp.Notification{
-				Method: "testNotification",
-				Params: mcp.NotificationParams{
-					AdditionalFields: map[string]interface{}{"param1": "value1"},
-				},
+			Method:  "testNotification",
+			NotificationParams: &mcp.NotificationParams{
+				AdditionalFields: map[string]interface{}{"param1": "value1"},
 			},
 		}
 		rawNotification, _ := json.Marshal(notification)
@@ -393,11 +391,9 @@ func TestStreamableHTTP_POST_SendAndReceive_stateless(t *testing.T) {
 		// send notification
 		notification := mcp.JSONRPCNotification{
 			JSONRPC: "2.0",
-			Notification: mcp.Notification{
-				Method: "testNotification",
-				Params: mcp.NotificationParams{
-					AdditionalFields: map[string]interface{}{"param1": "value1"},
-				},
+			Method:  "testNotification",
+			NotificationParams: &mcp.NotificationParams{
+				AdditionalFields: map[string]interface{}{"param1": "value1"},
 			},
 		}
 		rawNotification, _ := json.Marshal(notification)

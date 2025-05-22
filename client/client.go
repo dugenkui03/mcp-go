@@ -154,9 +154,7 @@ func (c *Client) Initialize(
 	// Send initialized notification
 	notification := mcp.JSONRPCNotification{
 		JSONRPC: mcp.JSONRPC_VERSION,
-		Notification: mcp.Notification{
-			Method: "notifications/initialized",
-		},
+		Method:  "notifications/initialized",
 	}
 
 	err = c.transport.SendNotification(ctx, notification)

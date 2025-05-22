@@ -99,8 +99,10 @@ func (f *sessionTestClientWithTools) SetSessionTools(tools map[string]ServerTool
 	f.sessionTools = toolsCopy
 }
 
+var testToolServerLog = &serverLog{}
+
 func (f *sessionTestClientWithTools) GetLogger() mcp.Logger {
-	return nil
+	return testToolServerLog
 }
 
 // sessionTestClientWithTools implements the SessionWithLogging interface for testing
@@ -129,17 +131,10 @@ func (f *sessionTestClientWithLogging) Initialized() bool {
 	return f.initialized
 }
 
-func (f *sessionTestClientWithLogging) SetLogLevel(level mcp.LoggingLevel) {
-	f.loggingLevel.Store(level)
-}
-
-func (f *sessionTestClientWithLogging) GetLogLevel() mcp.LoggingLevel {
-	level := f.loggingLevel.Load()
-	return level.(mcp.LoggingLevel)
-}
+var testServerLog = &serverLog{}
 
 func (f *sessionTestClientWithLogging) GetLogger() mcp.Logger {
-	return &serverLog{}
+	return testServerLog
 }
 
 // Verify that all implementations satisfy their respective interfaces
@@ -739,7 +734,7 @@ func TestMCPServer_SendNotificationToSpecificClient(t *testing.T) {
 	select {
 	case notification := <-session1Chan:
 		assert.Equal(t, "test-method", notification.Method)
-		assert.Equal(t, "test-data", notification.Notification.Params.AdditionalFields["data"])
+		assert.Equal(t, "test-data", notification.NotificationParams.AdditionalFields["data"])
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Expected notification not received by session 1")
 	}
@@ -860,7 +855,7 @@ func TestMCPServer_SessionToolCapabilitiesBehavior(t *testing.T) {
 		validateServer func(t *testing.T, s *MCPServer, session *sessionTestClientWithTools)
 	}{
 		{
-			name: "no tool capabilities provided",
+			name:          "no tool capabilities provided",
 			serverOptions: []ServerOption{
 				// No WithToolCapabilities
 			},
@@ -1018,8 +1013,8 @@ func TestMCPServer_SetLevel(t *testing.T) {
 	session.Initialize()
 
 	// Check default logging level
-	if session.GetLogLevel() != mcp.LoggingLevelError {
-		t.Errorf("Expected error level, got %v", session.GetLogLevel())
+	if session.GetLogger().GetLogLevel() != mcp.LoggingLevelError {
+		t.Errorf("Expected error level, got %v", session.GetLogger().GetLogLevel())
 	}
 
 	// Register the session
@@ -1049,7 +1044,7 @@ func TestMCPServer_SetLevel(t *testing.T) {
 	assert.True(t, ok)
 
 	// Check logging level
-	if session.GetLogLevel() != mcp.LoggingLevelCritical {
-		t.Errorf("Expected critical level, got %v", session.GetLogLevel())
+	if session.GetLogger().GetLogLevel() != mcp.LoggingLevelCritical {
+		t.Errorf("Expected critical level, got %v", session.GetLogger().GetLogLevel())
 	}
 }

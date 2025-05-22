@@ -86,31 +86,7 @@ func (s *MCPServer) SendNotificationToAllClients(
 	method string,
 	params map[string]any,
 ) {
-	var notification mcp.JSONRPCNotification
-	switch method {
-	case mcp.MethodNotificationLoggingMessage:
-		notification = mcp.JSONRPCNotification{
-			JSONRPC:                          mcp.JSONRPC_VERSION,
-			LoggingMessageNotificationParams: mcp.NewLoggingMessageNotificationParams(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
-		}
-	case mcp.MethodNotificationCancelled:
-		notification = mcp.JSONRPCNotification{
-			JSONRPC: mcp.JSONRPC_VERSION,
-			Method:  method,
-			CancelledNotificationParams: mcp.CancelledNotificationParams{
-				AdditionalFields: params,
-			},
-		}
-	default:
-		notification = mcp.JSONRPCNotification{
-			JSONRPC: mcp.JSONRPC_VERSION,
-			Method:  method,
-			NotificationParams: mcp.NotificationParams{
-				AdditionalFields: params,
-			},
-		}
-	}
-
+	notification := s.newJSONRPCNotification(method, params)
 	s.sessions.Range(func(k, v any) bool {
 		if session, ok := v.(ClientSession); ok && session.Initialized() {
 			select {
@@ -148,11 +124,7 @@ func (s *MCPServer) SendNotificationToClient(
 		return ErrNotificationNotInitialized
 	}
 
-	notification := mcp.JSONRPCNotification{
-		JSONRPC: mcp.JSONRPC_VERSION,
-		Method:  method,
-		Params:  params,
-	}
+	notification := s.newJSONRPCNotification(method, params)
 	select {
 	case session.NotificationChannel() <- notification:
 		return nil
@@ -190,11 +162,7 @@ func (s *MCPServer) SendNotificationToSpecificClient(
 		return ErrSessionNotInitialized
 	}
 
-	notification := mcp.JSONRPCNotification{
-		JSONRPC: mcp.JSONRPC_VERSION,
-		Method:  method,
-		Params:  params,
-	}
+	notification := s.newJSONRPCNotification(method, params)
 	select {
 	case session.NotificationChannel() <- notification:
 		return nil
@@ -343,4 +311,45 @@ func (s *MCPServer) DeleteSessionTools(sessionID string, names ...string) error 
 	}
 
 	return nil
+}
+
+func (s *MCPServer) newJSONRPCNotification(method string, params map[string]any) mcp.JSONRPCNotification {
+	var notification mcp.JSONRPCNotification
+	switch method {
+	case mcp.MethodNotificationLoggingMessage:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC:                          mcp.JSONRPC_VERSION,
+			LoggingMessageNotificationParams: mcp.NewLoggingMessageNotificationParams(params["level"].(mcp.LoggingLevel), params["logger"].(string), params["message"].(string)),
+		}
+	case mcp.MethodNotificationCancelled:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC:                     mcp.JSONRPC_VERSION,
+			Method:                      method,
+			CancelledNotificationParams: mcp.NewCancelledNotificationParams(params["requestID"].(mcp.RequestId), params["reason"].(string)),
+		}
+	case mcp.MethodNotificationProgress:
+		total := float64(0)
+		if val, exist := params["total"]; exist {
+			total = val.(float64)
+		}
+		message := ""
+		if val, exist := params["message"]; exist {
+			message = val.(string)
+		}
+		notification = mcp.JSONRPCNotification{
+			JSONRPC:                    mcp.JSONRPC_VERSION,
+			Method:                     method,
+			ProgressNotificationParams: mcp.NewProgressNotification(params["progressToken"].(mcp.ProgressToken), params["progress"].(float64), total, message),
+		}
+	default:
+		notification = mcp.JSONRPCNotification{
+			JSONRPC: mcp.JSONRPC_VERSION,
+			Method:  method,
+			NotificationParams: &mcp.NotificationParams{
+				AdditionalFields: params,
+			},
+		}
+	}
+
+	return notification
 }
