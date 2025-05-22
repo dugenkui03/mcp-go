@@ -160,7 +160,7 @@ func TestMCPServer_Tools(t *testing.T) {
 			action: func(t *testing.T, server *MCPServer, notificationChannel chan mcp.JSONRPCNotification) {
 				server.SetTools(ServerTool{
 					Tool: mcp.NewTool("test-tool-1"),
-					Handler: func(ctx context.Context, requestSession RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					Handler: func(ctx context.Context, requestSession mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return &mcp.CallToolResult{}, nil
 					},
 				}, ServerTool{

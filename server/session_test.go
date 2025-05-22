@@ -155,7 +155,7 @@ func TestSessionWithTools_Integration(t *testing.T) {
 	// Create session-specific tools
 	sessionTool := ServerTool{
 		Tool: mcp.NewTool("session-tool"),
-		Handler: func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		Handler: func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return mcp.NewToolResultText("session-tool result"), nil
 		},
 	}
@@ -203,7 +203,7 @@ func TestSessionWithTools_Integration(t *testing.T) {
 		require.True(t, exists, "Session tool should exist in the map")
 		require.NotNil(t, tool, "Session tool should not be nil")
 
-		requestSession := RequestSession{
+		requestSession := mcp.RequestSession{
 			Logger: session.GetLogger(),
 		}
 		// Now test calling directly with the handler
@@ -327,7 +327,7 @@ func TestMCPServer_AddSessionTool(t *testing.T) {
 	err = server.AddSessionTool(
 		session.SessionID(),
 		mcp.NewTool("session-tool-helper"),
-		func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return mcp.NewToolResultText("helper result"), nil
 		},
 	)
@@ -532,7 +532,7 @@ func TestMCPServer_CallSessionTool(t *testing.T) {
 	server := NewMCPServer("test-server", "1.0.0", WithToolCapabilities(true))
 
 	// Add global tool
-	server.AddTool(mcp.NewTool("test_tool"), func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	server.AddTool(mcp.NewTool("test_tool"), func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return mcp.NewToolResultText("global result"), nil
 	})
 
@@ -552,7 +552,7 @@ func TestMCPServer_CallSessionTool(t *testing.T) {
 	err = server.AddSessionTool(
 		session.SessionID(),
 		mcp.NewTool("test_tool"),
-		func(ctx context.Context, session RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		func(ctx context.Context, session mcp.RequestSession, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return mcp.NewToolResultText("session result"), nil
 		},
 	)

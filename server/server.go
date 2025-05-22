@@ -711,9 +711,12 @@ func (s *MCPServer) handleReadResource(
 	id any,
 	request mcp.ReadResourceRequest,
 ) (*mcp.ReadResourceResult, *requestError) {
-	sessionWithLog := ClientSessionFromContext(ctx).(SessionWithLogging)
-	requestSession := mcp.RequestSession{
-		Logger: sessionWithLog.GetLogger(),
+	session := ClientSessionFromContext(ctx)
+	requestSession := mcp.RequestSession{}
+	if session != nil {
+		if sessionWithLogging, typeAssertOk := session.(SessionWithLogging); typeAssertOk {
+			requestSession.Logger = sessionWithLogging.GetLogger()
+		}
 	}
 
 	s.resourcesMu.RLock()
@@ -752,10 +755,6 @@ func (s *MCPServer) handleReadResource(
 	s.resourcesMu.RUnlock()
 
 	if matched {
-		sessionWithLog := ClientSessionFromContext(ctx).(SessionWithLogging)
-		requestSession := mcp.RequestSession{
-			Logger: sessionWithLog.GetLogger(),
-		}
 		contents, err := matchedHandler(ctx, requestSession, request)
 		if err != nil {
 			return nil, &requestError{
@@ -838,9 +837,12 @@ func (s *MCPServer) handleGetPrompt(
 		}
 	}
 
-	sessionWithLog := ClientSessionFromContext(ctx).(SessionWithLogging)
-	requestSession := mcp.RequestSession{
-		Logger: sessionWithLog.GetLogger(),
+	session := ClientSessionFromContext(ctx)
+	requestSession := mcp.RequestSession{}
+	if session != nil {
+		if sessionWithLogging, typeAssertOk := session.(SessionWithLogging); typeAssertOk {
+			requestSession.Logger = sessionWithLogging.GetLogger()
+		}
 	}
 	result, err := handler(ctx, requestSession, request)
 	if err != nil {
