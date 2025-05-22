@@ -324,7 +324,7 @@ type JSONRPCNotification struct {
 	ProgressNotificationParams       *ProgressNotificationParams       `json:"-"`
 }
 
-func (n JSONRPCNotification) MarshalJSON() ([]byte, error) {
+func (n *JSONRPCNotification) MarshalJSON() ([]byte, error) {
 	raw := make(map[string]any)
 	raw["jsonrpc"] = n.JSONRPC
 	raw["method"] = n.Method
@@ -338,6 +338,77 @@ func (n JSONRPCNotification) MarshalJSON() ([]byte, error) {
 		raw["params"] = n.ProgressNotificationParams
 	}
 	return json.Marshal(raw)
+}
+
+func (n *JSONRPCNotification) UnmarshalJSON(data []byte) error {
+	raw := make(map[string]any)
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	if _, exist := raw["jsonrpc"]; exist {
+		n.JSONRPC = raw["jsonrpc"].(string)
+	}
+
+	if _, exist := raw["method"]; exist {
+		n.Method = raw["method"].(string)
+	}
+
+	switch n.Method {
+	case MethodNotificationLoggingMessage:
+		n.LoggingMessageNotificationParams = &LoggingMessageNotificationParams{}
+		if val, exist := raw["params"].(map[string]any); exist {
+			if logger, loggerExist := val["logger"]; loggerExist {
+				n.LoggingMessageNotificationParams.Logger = logger.(string)
+			}
+			if level, messageExist := val["message"]; messageExist {
+				n.LoggingMessageNotificationParams.Level = level.(LoggingLevel)
+			}
+			if data, dataExist := val["data"]; dataExist {
+				n.LoggingMessageNotificationParams.Data = data
+			}
+		}
+	case MethodNotificationCancelled:
+		n.CancelledNotificationParams = &CancelledNotificationParams{}
+		if val, exist := raw["params"].(map[string]any); exist {
+			if requestId, requestIdExist := val["requestId"]; requestIdExist {
+				if requestIdValue, requestIdValueExist := requestId.(map[string]any)["value"]; requestIdValueExist {
+					n.CancelledNotificationParams.RequestId = RequestId{value: requestIdValue}
+				}
+			}
+
+			if reason, messageExist := val["reason"]; messageExist {
+				n.CancelledNotificationParams.Reason = reason.(string)
+			}
+		}
+	case MethodNotificationProgress:
+		n.ProgressNotificationParams = &ProgressNotificationParams{}
+		if val, exist := raw["params"].(map[string]any); exist {
+			if progressToken, progressTokenExist := val["progressToken"]; progressTokenExist {
+				n.ProgressNotificationParams.ProgressToken = progressToken
+			}
+			if progress, progressExist := val["progress"]; progressExist {
+				n.ProgressNotificationParams.Progress = progress.(float64)
+			}
+			if total, totalExist := val["total"]; totalExist {
+				n.ProgressNotificationParams.Total = total.(float64)
+			}
+			if message, messageExist := val["message"]; messageExist {
+				n.ProgressNotificationParams.Message = message.(string)
+			}
+		}
+
+	default:
+		if val, exist := raw["params"].(map[string]any); exist {
+			n.NotificationParams = &NotificationParams{}
+			if meta, metaExist := val["_meta"]; metaExist {
+				n.NotificationParams.Meta = meta.(map[string]any)
+			}
+			n.NotificationParams.AdditionalFields = val
+		}
+	}
+
+	return nil
 }
 
 // JSONRPCResponse represents a successful (non-error) response to a request.
