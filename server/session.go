@@ -21,23 +21,7 @@ type ClientSession interface {
 // SessionWithLogging is an extension of ClientSession that can receive log message notifications and set log level
 type SessionWithLogging interface {
 	ClientSession
-	Logger
-}
-
-type Logger interface {
-	// SetLogLevel sets the minimum log level
-	SetLogLevel(level mcp.LoggingLevel)
-	// GetLogLevel retrieves the minimum log level
-	GetLogLevel() mcp.LoggingLevel
-	Log(ctx context.Context, level mcp.LoggingLevel, message string)
-	Debug(ctx context.Context, message string)
-	Info(ctx context.Context, message string)
-	Notice(ctx context.Context, message string)
-	Warning(ctx context.Context, message string)
-	Error(ctx context.Context, message string)
-	Critical(ctx context.Context, message string)
-	Alert(ctx context.Context, message string)
-	Emergency(ctx context.Context, message string)
+	mcp.Logger
 }
 
 // SessionWithTools is an extension of ClientSession that can store session-specific tool data
