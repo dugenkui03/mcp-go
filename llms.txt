@@ -4,5 +4,5 @@
 
 ## Docs
 
-- [Example](/mcp-go/example): This is an example page.
-- [Getting Started](/mcp-go/getting-started): MCP-Go makes it easy to build Model Context Protocol (MCP) servers in Go. This guide will help you create your first MCP server in just a few minutes.
+- [Example](/example): This is an example page.
+- [Getting Started](/getting-started): MCP-Go makes it easy to build Model Context Protocol (MCP) servers in Go. This guide will help you create your first MCP server in just a few minutes.
