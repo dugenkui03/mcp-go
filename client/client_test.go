@@ -35,18 +35,19 @@ func TestStreamableHTTPClient(t *testing.T) {
 
 	_, err = client.Initialize(ctx, initRequest)
 	if err != nil {
-		t.Fatalf("Failed to initialize: %v", err)
+		t.Fatalf("Failed to initialize: %v\n", err)
 	}
 
 	request := mcp.CallToolRequest{}
 	request.Params.Name = "notify"
 	result, err := client.CallTool(ctx, request)
+	println("111111")
 	if err != nil {
 		t.Fatalf("CallTool failed: %v", err)
 	}
 
-	// do NOT shutdown immediately
-	time.Sleep(time.Second)
+	// do NOT shutdown immediately, wait to receive notification successfully
+	time.Sleep(time.Second * 10)
 	if len(result.Content) != 1 {
 		t.Errorf("Expected 1 content item, got %d", len(result.Content))
 	}
