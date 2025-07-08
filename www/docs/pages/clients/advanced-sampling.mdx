@@ -67,8 +67,9 @@ func main() {
     samplingHandler := &MySamplingHandler{}
     
     // Create client with sampling support
-    mcpClient, err := client.NewStdioClient(
-        "/path/to/mcp/server",
+    mcpClient, err := client.NewStdioMCPClient(
+        "/path/to/mcp/server", 
+        nil, // No environment variables
         client.WithSamplingHandler(samplingHandler),
     )
     if err != nil {
@@ -76,10 +77,18 @@ func main() {
     }
     defer mcpClient.Close()
     
-    // Connect to server
+    // Initialize the client
     ctx := context.Background()
-    if err := mcpClient.Connect(ctx); err != nil {
-        log.Fatalf("Failed to connect: %v", err)
+    initRequest := mcp.InitializeRequest{}
+    initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+    initRequest.Params.ClientInfo = mcp.Implementation{
+        Name:    "Sampling Client",
+        Version: "1.0.0",
+    }
+    
+    // The sampling capability is automatically added when using WithSamplingHandler
+    if _, err := mcpClient.Initialize(ctx, initRequest); err != nil {
+        log.Fatalf("Failed to initialize: %v", err)
     }
     
     // The client will now automatically handle sampling requests
@@ -151,8 +160,9 @@ func main() {
     serverPath := os.Args[1]
     
     // Create client with mock sampling handler
-    mcpClient, err := client.NewStdioClient(
+    mcpClient, err := client.NewStdioMCPClient(
         serverPath,
+        nil, // No environment variables
         client.WithSamplingHandler(&MockSamplingHandler{}),
     )
     if err != nil {
@@ -160,17 +170,28 @@ func main() {
     }
     defer mcpClient.Close()
     
-    // Connect and test
+    // Initialize the client
     ctx := context.Background()
-    if err := mcpClient.Connect(ctx); err != nil {
-        log.Fatalf("Failed to connect: %v", err)
+    initRequest := mcp.InitializeRequest{}
+    initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+    initRequest.Params.ClientInfo = mcp.Implementation{
+        Name:    "Mock Sampling Client",
+        Version: "1.0.0",
+    }
+    
+    if _, err := mcpClient.Initialize(ctx, initRequest); err != nil {
+        log.Fatalf("Failed to initialize: %v", err)
     }
     
     // Test server tools that use sampling
-    result, err := mcpClient.CallTool(ctx, "ask_llm", map[string]any{
+    callRequest := mcp.CallToolRequest{}
+    callRequest.Params.Name = "ask_llm"
+    callRequest.Params.Arguments = map[string]interface{}{
         "question": "What is the capital of France?",
         "system_prompt": "You are a helpful geography assistant.",
-    })
+    }
+    
+    result, err := mcpClient.CallTool(ctx, callRequest)
     if err != nil {
         log.Fatalf("Tool call failed: %v", err)
     }
@@ -375,8 +396,9 @@ When you provide a sampling handler, the client automatically declares the sampl
 
 ```go
 // This automatically adds sampling capability
-mcpClient, err := client.NewStdioClient(
+mcpClient, err := client.NewStdioMCPClient(
     serverPath,
+    nil, // No environment variables
     client.WithSamplingHandler(handler), // Enables sampling capability
 )
 ```

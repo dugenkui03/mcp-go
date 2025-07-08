@@ -41,7 +41,16 @@ func main() {
     ctx := context.Background()
 
     // Initialize the connection
-    if err := c.Initialize(ctx, initRequest); err != nil {
+    initRequest := mcp.InitializeRequest{}
+    initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+    initRequest.Params.ClientInfo = mcp.Implementation{
+        Name:    "Example Client",
+        Version: "1.0.0",
+    }
+    initRequest.Params.Capabilities = mcp.ClientCapabilities{}
+    
+    serverInfo, err := c.Initialize(ctx, initRequest)
+    if err != nil {
         log.Fatal(err)
     }
 
@@ -53,7 +62,8 @@ func main() {
 
 func demonstrateClientOperations(ctx context.Context, c client.Client) error {
     // List available tools
-    tools, err := c.ListTools(ctx)
+    toolsRequest := mcp.ListToolsRequest{}
+    tools, err := c.ListTools(ctx, toolsRequest)
     if err != nil {
         return fmt.Errorf("failed to list tools: %w", err)
     }
@@ -64,7 +74,8 @@ func demonstrateClientOperations(ctx context.Context, c client.Client) error {
     }
 
     // List available resources
-    resources, err := c.ListResources(ctx)
+    resourcesRequest := mcp.ListResourcesRequest{}
+    resources, err := c.ListResources(ctx, resourcesRequest)
     if err != nil {
         return fmt.Errorf("failed to list resources: %w", err)
     }
@@ -127,7 +138,7 @@ func demonstrateClientOperations(ctx context.Context, c client.Client) error {
 
 ```go
 // Create STDIO client
-client, err := client.NewStdioMCPClient("server-command", "arg1", "arg2")
+client, err := client.NewStdioMCPClient("server-command", nil, "arg1", "arg2")
 ```
 
 ### StreamableHTTP Client
@@ -139,7 +150,7 @@ client, err := client.NewStdioMCPClient("server-command", "arg1", "arg2")
 
 ```go
 // Create StreamableHTTP client
-client := client.NewStreamableHttpClient("http://localhost:8080/mcp")
+client, err := client.NewStreamableHttpClient("http://localhost:8080/mcp")
 ```
 
 ### SSE Client
@@ -151,7 +162,7 @@ client := client.NewStreamableHttpClient("http://localhost:8080/mcp")
 
 ```go
 // Create SSE client
-client := client.NewSSEMCPClient("http://localhost:8080/mcp/sse")
+client, err := client.NewSSEMCPClient("http://localhost:8080/mcp/sse")
 ```
 
 ### In-Process Client
@@ -163,7 +174,7 @@ client := client.NewSSEMCPClient("http://localhost:8080/mcp/sse")
 
 ```go
 // Create in-process client
-client := client.NewInProcessClient(server)
+client, err := client.NewInProcessClient(server)
 ```
 
 ## Common Client Patterns
@@ -195,11 +206,17 @@ func NewMCPClientManager(clientType, address string) (*MCPClientManager, error) 
 
     switch clientType {
     case "stdio":
-        c, err = client.NewStdioMCPClient("server-command")
+        c, err = client.NewStdioMCPClient("server-command", nil)
     case "http":
-        c = client.NewStreamableHttpClient(address)
+        c, err = client.NewStreamableHttpClient(address)
+        if err != nil {
+            return nil, fmt.Errorf("failed to create HTTP client: %w", err)
+        }
     case "sse":
-        c = client.NewSSEMCPClient(address)
+        c, err = client.NewSSEMCPClient(address)
+        if err != nil {
+            return nil, fmt.Errorf("failed to create SSE client: %w", err)
+        }
     default:
         return nil, fmt.Errorf("unknown client type: %s", clientType)
     }
@@ -217,7 +234,16 @@ func NewMCPClientManager(clientType, address string) (*MCPClientManager, error) 
     }
 
     // Initialize connection
-    if err := c.Initialize(ctx); err != nil {
+    initRequest := mcp.InitializeRequest{}
+    initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+    initRequest.Params.ClientInfo = mcp.Implementation{
+        Name:    "Client Manager",
+        Version: "1.0.0",
+    }
+    initRequest.Params.Capabilities = mcp.ClientCapabilities{}
+    
+    _, err = c.Initialize(ctx, initRequest)
+    if err != nil {
         cancel()
         return nil, fmt.Errorf("failed to initialize client: %w", err)
     }
@@ -385,15 +411,31 @@ func (msc *MultiServerClient) AddServer(name, address string, clientType string)
 
     switch clientType {
     case "http":
-        c = client.NewStreamableHttpClient(address)
+        c, err = client.NewStreamableHttpClient(address)
+        if err != nil {
+            return fmt.Errorf("failed to create HTTP client: %w", err)
+        }
     case "sse":
-        c = client.NewSSEMCPClient(address)
+        c, err = client.NewSSEMCPClient(address)
+        if err != nil {
+            return fmt.Errorf("failed to create SSE client: %w", err)
+        }
     default:
         return fmt.Errorf("unsupported client type: %s", clientType)
     }
 
     ctx := context.Background()
-    if err := c.Initialize(ctx); err != nil {
+    
+    initRequest := mcp.InitializeRequest{}
+    initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+    initRequest.Params.ClientInfo = mcp.Implementation{
+        Name:    "Multi-Server Client",
+        Version: "1.0.0",
+    }
+    initRequest.Params.Capabilities = mcp.ClientCapabilities{}
+    
+    _, err = c.Initialize(ctx, initRequest)
+    if err != nil {
         return fmt.Errorf("failed to initialize client for %s: %w", name, err)
     }
 

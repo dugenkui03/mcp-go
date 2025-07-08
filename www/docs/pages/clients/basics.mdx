@@ -10,16 +10,16 @@ MCP-Go provides client constructors for each supported transport. The choice of 
 
 ```go
 // STDIO client - for command-line tools
-client, err := client.NewStdioMCPClient("command", "arg1", "arg2")
+client, err := client.NewStdioMCPClient("command", nil, "arg1", "arg2")
 
 // StreamableHTTP client - for web services
-client := client.NewStreamableHttpClient("http://localhost:8080/mcp")
+client, err := client.NewStreamableHttpClient("http://localhost:8080/mcp")
 
 // SSE client - for real-time web applications
-client := client.NewSSEMCPClient("http://localhost:8080/mcp/sse")
+client, err := client.NewSSEMCPClient("http://localhost:8080/mcp/sse")
 
 // In-process client - for testing and embedded scenarios
-client := client.NewInProcessClient(server)
+client, err := client.NewInProcessClient(server)
 ```
 
 ### STDIO Client Creation
@@ -73,40 +73,42 @@ func createStdioClientWithEnv() (client.Client, error) {
 ### StreamableHTTP Client Creation
 
 ```go
-func createStreamableHTTPClient() client.Client {
+func createStreamableHTTPClient() (*client.Client, error) {
     // Basic StreamableHTTP client
-	httpTransport, err := transport.NewStreamableHTTP(server.URL,
-		// Set timeout
-		transport.WithHTTPTimeout(30*time.Second),
-		// Set custom headers
-		transport.WithHTTPHeaders(map[string]string{
-			"X-Custom-Header": "custom-value",
-			"Y-Another-Header": "another-value",
-		}),
-		// With custom HTTP client
-		transport.WithHTTPBasicClient(&http.Client{}),
-	)
+    c, err := client.NewStreamableHttpClient(server.URL,
+        // Set timeout
+        transport.WithHTTPTimeout(30*time.Second),
+        // Set custom headers
+        transport.WithHTTPHeaders(map[string]string{
+            "X-Custom-Header": "custom-value",
+            "Y-Another-Header": "another-value",
+        }),
+        // With custom HTTP client
+        transport.WithHTTPBasicClient(&http.Client{}),
+    )
     if err != nil {
-        log.Fatalf("Failed to create StreamableHTTP transport: %v", err)
+        return nil, fmt.Errorf("failed to create StreamableHTTP client: %w", err)
     }
-    c := client.NewClient(httpTransport)
-    return c
+    return c, nil
 }
 ```
 
 ### SSE Client Creation
 
 ```go
-func createSSEClient() client.Client {
+func createSSEClient() (*client.Client, error) {
     // Basic SSE client
-	c, err := NewSSEMCPClient(testServer.URL+"/sse",
-		// Set custom headers
-		WithHeaders(map[string]string{
-			"X-Custom-Header": "custom-value",
-			"Y-Another-Header": "another-value",
-		}),
-	)
-    return c
+    c, err := client.NewSSEMCPClient(testServer.URL+"/sse",
+        // Set custom headers
+        client.WithHeaders(map[string]string{
+            "X-Custom-Header": "custom-value",
+            "Y-Another-Header": "another-value",
+        }),
+    )
+    if err != nil {
+        return nil, fmt.Errorf("failed to create SSE client: %w", err)
+    }
+    return c, nil
 }
 ```
 
@@ -126,7 +128,7 @@ Understanding the client lifecycle is crucial for proper resource management and
 ```go
 func demonstrateClientLifecycle() error {
     // 1. Creation
-    c, err := client.NewSSEMCPClient("server-command")
+    c, err := client.NewSSEMCPClient("http://localhost:8080/mcp/sse")
     if err != nil {
         return fmt.Errorf("client creation failed: %w", err)
     }
@@ -141,7 +143,15 @@ func demonstrateClientLifecycle() error {
     ctx := context.Background()
 
     // 2. Initialization
-    if err := c.Initialize(ctx); err != nil {
+    initRequest := mcp.InitializeRequest{}
+    initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+    initRequest.Params.ClientInfo = mcp.Implementation{
+        Name:    "Example Client",
+        Version: "1.0.0",
+    }
+    initRequest.Params.Capabilities = mcp.ClientCapabilities{}
+    
+    if _, err := c.Initialize(ctx, initRequest); err != nil {
         return fmt.Errorf("client initialization failed: %w", err)
     }
 
@@ -156,7 +166,8 @@ func demonstrateClientLifecycle() error {
 
 func performClientOperations(ctx context.Context, c client.Client) error {
     // List available tools
-    tools, err := c.ListTools(ctx)
+    toolsRequest := mcp.ListToolsRequest{}
+    tools, err := c.ListTools(ctx, toolsRequest)
     if err != nil {
         return err
     }
