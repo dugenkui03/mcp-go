@@ -64,7 +64,7 @@ s := server.NewMCPServer(
     "Full-Featured Server", 
     "1.0.0",
     server.WithToolCapabilities(true),
-    server.WithResourceCapabilities(true),
+    server.WithResourceCapabilities(true, true),
     server.WithPromptCapabilities(true),
 )
 ```
@@ -181,7 +181,7 @@ Configure transport-specific options:
 // HTTP with custom options
 httpServer := server.NewStreamableHTTPServer(s,
     server.WithEndpointPath("/mcp"),
-    server.WithStateless(true),
+    server.WithStateLess(true),
 )
 
 if err := httpServer.Start(":8080"); err != nil {
@@ -193,6 +193,7 @@ sseServer := server.NewSSEServer(s,
     server.WithSSEEndpoint("/events"),
     server.WithMessageEndpoint("/message"),
     server.WithKeepAlive(true),
+    server.WithKeepAliveInterval(30*time.Second),
 )
 
 if err := sseServer.Start(":8080"); err != nil {
